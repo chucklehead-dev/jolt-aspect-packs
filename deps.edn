@@ -1,6 +1,8 @@
 {:paths ["src" "resources"]
  :aliases
- {:test
+ {:compatibility
+  {:main-opts ["-m" "jolt.aspect-packs.compatibility"]}
+  :test
   {:extra-paths ["test" "models"]
    :extra-deps
    {io.github.chucklehead-dev/jolt-hegel

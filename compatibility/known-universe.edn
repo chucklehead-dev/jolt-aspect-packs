@@ -1,0 +1,77 @@
+{:schema 1
+ :universe :jolt-aspect-packs/known-universe
+ :entries
+ [{:id :otel/http-client
+   :status :validated
+   :age {:validated-on [2026 8 28]
+         :review-after [2026 11 26]
+         :clock :not-consulted}
+   :observation {:clean true}
+
+   :pack {:id io.github.chucklehead-dev/jolt-otel-instrumentation-http-client
+          :git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-http-client.git"
+          :git/sha "40679054dc4786e43577cb9788f69db0f9a2a401"
+          :provider otel.instrumentation.http-client/aspect-provider
+          :manifest "META-INF/jolt/aspects/http-client-core.edn"}
+   :target {:id jolt-lang/http-client
+            :git/url "https://github.com/casselc/http-client.git"
+            :git/sha "a00979f5e55bc8deb98291993643ff1ccf50a57b"
+            :upstream {:git/url "https://github.com/jolt-lang/http-client.git"
+                       :git/sha "04825632ed96a77a1c6ba1921c0a31280a3daade"}}
+   :compiler {:id jolt-lang/jolt
+              :git/sha "c666a2d0175923cb7edeb36fb99c7e2c657af375"
+              :chez "10.4.1"}
+
+   ;; This is the source seam compatibility id published by the target. It is
+   ;; deliberately distinct from the target repository revision above.
+   :seam {:id "12b78edb9024d200083cf77d61fa56709ab23dd7"
+          :library jolt-lang/http-client
+          :selector {:entry clj-http.lite.core/request
+                     :arity 1}
+          :match :exactly-one}
+
+   :evidence
+   {:report {:path "test-app/target/http-client-aspects.edn"
+             :schema 1
+             :weaver "jolt.aspect-ir/v1"
+             :build-identity "v1-2188300309-2105809219-1047"
+             :aspects 1
+             :sites 1
+             :aspect-id :http-client.core/request
+             :advice otel.instrumentation.http-client/around
+             :contract :replace-args-v1}
+    :woven {:path "test-app/target/woven-http-client-fixture"
+            :exit 0
+            :stdout-lines
+            ["OK: woven HTTP client span, metric, and tracecontext propagation"]}
+    :plain {:path "test-app-plain/target/plain-http-client-fixture"
+            :args ["plain"]
+            :exit 0
+            :stdout-lines
+            ["OK: plain build remains uninstrumented"]}}
+
+   ;; These are existing build gates in the pack repository. The oracle
+   ;; consumes their already-compiled artifacts; it does not fetch or build.
+   :gates
+   [{:id :unit
+     :cwd :pack/root
+     :runner :workspace/pinned-chez-10.4.1
+     :argv ["jolt" "-M:test"]}
+    {:id :woven-build
+     :cwd :pack/test-app
+     :runner :workspace/pinned-chez-10.4.1
+     :compiler :compiler/pinned-jolt
+     :argv ["build" "-m" "instrumentation-fixture.main"
+            "-o" "target/woven-http-client-fixture"]}
+    {:id :woven-run
+     :cwd :pack/root
+     :argv ["test-app/target/woven-http-client-fixture"]}
+    {:id :plain-build
+     :cwd :pack/test-app-plain
+     :runner :workspace/pinned-chez-10.4.1
+     :compiler :compiler/pinned-jolt
+     :argv ["build" "-m" "instrumentation-fixture.main"
+            "-o" "target/plain-http-client-fixture"]}
+    {:id :plain-run
+     :cwd :pack/root
+     :argv ["test-app-plain/target/plain-http-client-fixture" "plain"]}]}]}
