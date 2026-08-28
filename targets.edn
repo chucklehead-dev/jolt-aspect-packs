@@ -12,4 +12,12 @@
    :upstream {:git/url "https://github.com/burinc/glitter.git"
               :git/sha "482642fd3c9671b05f0ffaa2ef47420b1a92553b"}
    :manifest "META-INF/jolt/aspects/packs/glitter-f4e3eb8.edn"
-   :scenario "scenarios/glitter"}}}
+   :scenario "scenarios/glitter"}
+
+  jolt-lang/glimmer
+  {:git/url "https://github.com/casselc/glimmer.git"
+   :git/sha "6dab5597dc0d912793fe175d0d3cbb9e75f11426"
+   :upstream {:git/url "https://github.com/jolt-lang/glimmer.git"
+              :git/sha "55e38f0b21b8decbcf156f56d3c9dd25a875148b"}
+   :manifest "META-INF/jolt/aspects/packs/glimmer-6dab559.edn"
+   :scenario "scenarios/glimmer"}}}

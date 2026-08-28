@@ -1,0 +1,9 @@
+{:schema 1
+ :library {:id jolt-lang/glimmer
+           :version "6dab5597dc0d912793fe175d0d3cbb9e75f11426"}
+ :aspects
+ [{:id :glimmer.core/root-mount
+   :match {:entry glimmer.core/mount
+           :arity 3}
+   :advice-role :ui/root-mount
+   :expect {:matches 1}}]}

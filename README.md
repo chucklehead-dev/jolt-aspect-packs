@@ -45,6 +45,11 @@ reorder lifecycle. It records opaque child/sibling identity and validates the
 pack against the exact exception-safe fork revision while retaining the exact
 upstream base in `targets.edn`. See [the Glitter pack notes](docs/glitter.md).
 
+The third pack targets Glimmer's public, toolkit-independent root mount. It
+records only a coarse root shape and validates real success and failure paths
+against an in-memory backend, without exposing native handles or UI content.
+See [the Glimmer pack notes](docs/glimmer.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh
@@ -68,7 +73,14 @@ server:
 /home/chuck/ai-src/tools/jolt-with-chez-10.4.1 jolt -M:glitter-conformance
 ```
 
+Run the independent Glimmer source/mount conformance gate without a display
+server:
+
+```sh
+/home/chuck/ai-src/tools/jolt-with-chez-10.4.1 jolt -M:glimmer-conformance
+```
+
 See [the central pack contract](docs/CONTRACT.md) for the compatibility and
-verification rules. The next packs will cover Glimmer separately, HTTP server,
-database SPI, Samizdat control-loop seams, and lifecycle histories discovered
-by the current cross-library correctness work.
+verification rules. The next packs will cover HTTP server, database SPI,
+Samizdat control-loop seams, and lifecycle histories discovered by the current
+cross-library correctness work.
