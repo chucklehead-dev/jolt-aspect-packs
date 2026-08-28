@@ -21,12 +21,14 @@ Each library remains isolated:
 ```text
 resources/META-INF/jolt/aspects/packs/<library>-<revision>.edn
 src/jolt/aspect_packs/<library>/provider.clj
+models/jolt/aspect_packs/<library>/model.clj
 test/jolt/aspect_packs/<library>/provider_test.clj
 test/jolt/aspect_packs/<library>/report_test.clj
 scenarios/<library>/
 ```
 
-`jolt.aspect-packs.history` contains only target-neutral journal mechanics.
+`jolt.aspect-packs.history` contains only target-neutral journal mechanics;
+library model namespaces compose the shared `hegel.trace` rules.
 Library-specific redaction, semantic roles, advice, tests, and model rules stay
 under that library's namespace.
 

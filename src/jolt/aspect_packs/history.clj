@@ -9,7 +9,7 @@
 (defn journal
   "Create a thread-safe semantic history journal."
   []
-  (atom {:next-seq 0
+  (atom {:next-seq 1
          :next-operation-id 0
          :events []}))
 
@@ -40,7 +40,7 @@
                              {:seq next-seq
                               :operation-id next-operation-id
                               :parent-operation-id *parent-operation-id*
-                              :phase :invoke
+                              :phase :enter
                               :op (:id join-point)
                               :input input}))))]
     (:operation-id (peek (:events state)))))
@@ -65,4 +65,3 @@
                         :phase :throw
                         :output :thrown})
         (throw error)))))
-
