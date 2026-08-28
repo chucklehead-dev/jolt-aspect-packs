@@ -18,12 +18,30 @@
     (is (identical? result
                     (run-advice journal [101 202 303] #(identity result))))
     (let [events (history/events journal)
-          enter (first events)]
+          enter (first events)
+          child-id (get-in enter [:input :child-id])
+          sibling-id (get-in enter [:input :sibling-id])]
       (is (= [:enter :return] (mapv :phase events)))
-      (is (= {:child-id (hash 202) :sibling-id (hash 303)}
-             (:input enter)))
+      (is (string? child-id))
+      (is (string? sibling-id))
+      (is (not= child-id sibling-id))
+      (is (not= 202 child-id))
+      (is (not= 303 sibling-id))
       (is (not-any? #(contains? (:input %) :parent) events))
       (is (= events (model/check! events))))))
+
+(deftest opaque-identities-are-stable-only-within-the-journal
+  (let [journal (history/journal)]
+    (run-advice journal [101 202 303] (constantly nil))
+    (run-advice journal [101 202 404] (constantly nil))
+    (let [[first-enter second-enter]
+          (filterv #(= :enter (:phase %)) (history/events journal))]
+      (is (= (get-in first-enter [:input :child-id])
+             (get-in second-enter [:input :child-id])))
+      (is (not= (get-in first-enter [:input :sibling-id])
+                (get-in second-enter [:input :sibling-id])))
+      (is (not-any? #{202 303 404}
+                    (mapcat vals (map :input [first-enter second-enter])))))))
 
 (deftest null-sibling-and-thrown-identity-are-preserved
   (doseq [sibling [nil 0]]
@@ -49,4 +67,3 @@
     (is (= provider/target-revision
            (get-in provider/aspect-provider [:libraries 'burinc/glitter])))
     (is (= 1 (get-in manifest [:aspects 0 :expect :matches])))))
-

@@ -10,9 +10,9 @@
       (and (number? value) (zero? value))))
 
 (defn- opaque-id
-  [value]
+  [journal value]
   (when-not (null-pointer-shaped? value)
-    (hash value)))
+    (history/opaque-token! journal value)))
 
 (defn around-list-box-reorder
   "Record Glitter's semantic child reorder without publishing raw native
@@ -23,8 +23,8 @@
     (let [[_parent child sibling] evaluated-args]
       (history/invoke! history/*journal*
                        join-point
-                       {:child-id (opaque-id child)
-                        :sibling-id (opaque-id sibling)}
+                       {:child-id (opaque-id history/*journal* child)
+                        :sibling-id (opaque-id history/*journal* sibling)}
                        proceed))))
 
 (def aspect-provider
@@ -33,4 +33,3 @@
    :roles {:ui/container-reorder
            {:fn 'jolt.aspect-packs.glitter.provider/around-list-box-reorder
             :contract :args-v1}}})
-

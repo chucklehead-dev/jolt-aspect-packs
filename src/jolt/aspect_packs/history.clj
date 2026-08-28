@@ -11,7 +11,25 @@
   []
   (atom {:next-seq 1
          :next-operation-id 0
+         :next-opaque-id 1
+         :opaque-values {}
          :events []}))
+
+(defn opaque-token!
+  "Return a journal-local stable token for value without placing value in an
+  emitted event. The journal retains the private value-to-token association for
+  its lifetime; tokens intentionally carry no hash or string form of value."
+  [journal value]
+  (let [state
+        (swap! journal
+               (fn [{:keys [next-opaque-id opaque-values] :as state}]
+                 (if (contains? opaque-values value)
+                   state
+                   (-> state
+                       (assoc :next-opaque-id (inc next-opaque-id))
+                       (assoc-in [:opaque-values value]
+                                 (str "opaque-" next-opaque-id))))))]
+    (get-in state [:opaque-values value])))
 
 (defn events
   "Return the journal's immutable event vector."
