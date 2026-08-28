@@ -1,0 +1,8 @@
+{:paths ["src" "resources"]
+ :aliases
+ {:test
+  {:extra-paths ["test"]
+   :main-opts ["-m" "jolt.aspect-packs.test-runner"]}}
+ :tasks
+ {test "jolt -M:test"}}
+

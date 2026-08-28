@@ -1,0 +1,6 @@
+/target/
+/.jolt/
+/.cpcache/
+/.nrepl-port
+scenarios/*/target/
+
