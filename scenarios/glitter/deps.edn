@@ -1,0 +1,13 @@
+{:paths ["src"]
+ :deps
+ {io.github.casselc/glitter
+  {:git/url "https://github.com/casselc/glitter.git"
+   :git/sha "f4e3eb83015566e4cadaedd7f5e8ad80dc57404f"}
+  io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/build
+ {:aspects
+  [{:resource "META-INF/jolt/aspects/packs/glitter-f4e3eb8.edn"
+    :provider jolt.aspect-packs.glitter.provider/aspect-provider}]
+  :aspect-report "target/aspects.edn"}}
+

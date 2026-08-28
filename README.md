@@ -40,6 +40,11 @@ history provider
 records synchronous request invocation, completion, exception, and nested
 parentage while excluding headers, bodies, query strings, and server names.
 
+The second pack targets Burin's independently authored Glitter list-box
+reorder lifecycle. It records opaque child/sibling identity and validates the
+pack against the exact exception-safe fork revision while retaining the exact
+upstream base in `targets.edn`. See [the Glitter pack notes](docs/glitter.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh
@@ -56,7 +61,14 @@ Run the compiled scenario with the current aspect-capable compiler checkout:
   make aspect-smoke
 ```
 
+Run the independent Glitter source/lifecycle conformance gate without a display
+server:
+
+```sh
+/home/chuck/ai-src/tools/jolt-with-chez-10.4.1 jolt -M:glitter-conformance
+```
+
 See [the central pack contract](docs/CONTRACT.md) for the compatibility and
-verification rules. The next packs will cover HTTP server, database SPI,
-Samizdat control-loop seams, and lifecycle histories discovered by the current
-cross-library correctness work.
+verification rules. The next packs will cover Glimmer separately, HTTP server,
+database SPI, Samizdat control-loop seams, and lifecycle histories discovered
+by the current cross-library correctness work.

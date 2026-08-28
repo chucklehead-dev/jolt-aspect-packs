@@ -1,0 +1,10 @@
+{:schema 1
+ :library {:id burinc/glitter
+           :version "f4e3eb83015566e4cadaedd7f5e8ad80dc57404f"}
+ :aspects
+ [{:id :glitter.widget/list-box-child-reorder
+   :match {:entry glitter.widget/list-box-reorder-child!
+           :arity 3}
+   :advice-role :ui/container-reorder
+   :expect {:matches 1}}]}
+

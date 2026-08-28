@@ -1,7 +1,15 @@
 {:schema 1
  :targets
  {jolt-lang/http-client
-  {:git/url "https://github.com/casselc/http-client.git"
+ {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"
    :manifest "META-INF/jolt/aspects/packs/http-client-12b78ed.edn"
-   :scenario "scenarios/http-client"}}}
+   :scenario "scenarios/http-client"}
+
+  burinc/glitter
+  {:git/url "https://github.com/casselc/glitter.git"
+   :git/sha "f4e3eb83015566e4cadaedd7f5e8ad80dc57404f"
+   :upstream {:git/url "https://github.com/burinc/glitter.git"
+              :git/sha "482642fd3c9671b05f0ffaa2ef47420b1a92553b"}
+   :manifest "META-INF/jolt/aspects/packs/glitter-f4e3eb8.edn"
+   :scenario "scenarios/glitter"}}}
