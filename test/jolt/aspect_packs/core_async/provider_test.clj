@@ -3,7 +3,6 @@
             [clojure.test :refer [deftest is testing]]
             [hegel.clojure-test :as hegel-test]
             [hegel.generator :as g]
-            [hegel.history :as hegel-history]
             [jolt.fibers :as fibers]
             [jolt.aspect-packs.core-async.model :as model]
             [jolt.aspect-packs.core-async.provider :as provider]
@@ -83,6 +82,12 @@
     (model/check-callback!
      (model/callback-initial-state {channel-token capacity}) events)
     events))
+
+(defn- callback-trace [events]
+  (model/callback-trace events))
+
+(defn- operation-terminal [operations operation]
+  (:terminal (first (filter #(= operation (:operation %)) operations))))
 
 (defn- run-action! [journal channel backend [operation value]]
   (case backend
@@ -228,8 +233,12 @@
                      :context :core-async-callback-test}
                     %)
                 @calls))
-    (is (= [:invoke :return] (mapv :phase (history/events journal))))
+    (is (= [:invoke :invoke :return :return]
+           (mapv :phase (history/events journal))))
     (let [events (history/events journal)
+          trace (callback-trace events)
+          operations (:logical-operations trace)
+          targets (:target-operations trace)
           channel-token (get-in events [0 :input :channel])
           value-token (get-in events [0 :input :value])]
       (is (= {:channel channel-token
@@ -243,10 +252,19 @@
       (is (= {:result :accepted
               :carrier {:parent-operation-id 0
                         :context-id :core-async-callback-test}}
-             (:value (second events))))
+             (:value (operation-terminal operations :core-async/put))))
+      (is (= 1 (count targets)))
+      (is (= :core-async/put-target (:operation (first targets))))
+      (is (= 0 (get-in (first targets) [:invoke :parent-operation-id])))
+      (is (= "core-async-provider-test/put/target"
+             (get-in (first targets) [:invoke :site-id])))
+      (is (= "core-async-provider-test-build"
+             (get-in (first targets) [:invoke :build-identity])))
+      (is (= {:result :target-returned} (:value (first targets))))
       (is (not-any? #(or (identical? channel %)
                          (identical? value %)
-                         (identical? callback %))
+                         (identical? callback %)
+                         (identical? result %))
                     (tree-seq coll? seq events))))
     (is (true? (history/assert-complete! journal)))))
 
@@ -264,7 +282,7 @@
                 :core-async/put [channel value nil true]
                 :core-async/take [channel nil true])
               (core-async-proceed operation))))
-      (is (= [:invoke :return]
+      (is (= [:invoke :invoke :return :return]
              (mapv :phase (history/events journal))))
       (is (true? (history/assert-complete! journal)))
       (async/close! channel))))
@@ -308,8 +326,10 @@
           nil
           (catch Throwable error error))]
     (is (identical? callback-error observed))
-    (is (= [:invoke :return]
+    (is (= [:invoke :invoke :return :throw]
            (mapv :phase (history/events callback-journal))))
+    (is (not-any? #(identical? callback-error %)
+                  (tree-seq coll? seq (history/events callback-journal))))
     (is (true? (history/assert-complete! callback-journal))))
   (let [target-error (ex-info "target" {:source :target})
         target-journal (history/journal)
@@ -322,11 +342,11 @@
           nil
           (catch Throwable error error))]
     (is (identical? target-error observed))
-    (is (= [:invoke :throw]
+    (is (= [:invoke :invoke :throw :throw]
            (mapv :phase (history/events target-journal))))
     (is (= {:result :target-threw
             :error-type (str (type target-error))}
-           (get-in (history/events target-journal) [1 :value])))
+           (get-in (history/events target-journal) [2 :value])))
     (is (not-any? #(identical? target-error %)
                   (tree-seq coll? seq (history/events target-journal))))
     (is (true? (history/assert-complete! target-journal)))))
@@ -382,7 +402,11 @@
             :core-async/take (is (true? (async/offer! channel payload)))))
         (let [observation (deref completed 5000 ::timed-out)
               events (history/events journal)
-              operation-id (:operation-id (first events))]
+              trace (callback-trace events)
+              logical (first (:logical-operations trace))
+              target (first (:target-operations trace))
+              operation-id (:operation-id logical)
+              logical-terminal (:terminal logical)]
           (is (not= ::timed-out observation))
           (is (= 1 @callback-count))
           (is (= (if (= :core-async/put operation) true nil)
@@ -402,19 +426,27 @@
 
             (not on-caller?)
             (is (not (identical? caller (:thread observation)))))
-          (is (= [:invoke :return] (mapv :phase events)))
+          (is (= [:invoke :invoke :return :return]
+                 (mapv :phase events)))
+          (is (= 1 (count (:target-operations trace))))
+          (is (= operation-id
+                 (get-in target [:invoke :parent-operation-id])))
+          (is (= {:result :target-returned} (:value target)))
+          (is (< (:invoke-seq target) (:terminal-seq logical)))
+          (when (and (not pending?) on-caller?)
+            (is (< (:terminal-seq logical) (:terminal-seq target))))
           (is (= {:parent-operation-id operation-id
                   :context-id :core-async-callback-test}
-                 (get-in events [1 :value :carrier])))
+                 (get-in logical-terminal [:value :carrier])))
           (is (= (if (= :core-async/put operation)
                    {:result :accepted}
                    {:result :value
-                    :value (get-in events [1 :value :value])})
-                 (dissoc (:value (second events)) :carrier)))
+                    :value (get-in logical-terminal [:value :value])})
+                 (dissoc (:value logical-terminal) :carrier)))
           (when (= :core-async/take operation)
-            (is (string? (get-in events [1 :value :value])))
+            (is (string? (get-in logical-terminal [:value :value])))
             (is (not (identical? payload
-                                  (get-in events [1 :value :value])))))
+                                  (get-in logical-terminal [:value :value])))))
           (is (true? (history/assert-complete! journal))))
         (async/close! channel)))))
 
@@ -487,10 +519,11 @@
                          {channel-token capacity}) events)))
             (is (= (count expected) @callback-count))
             (is (= @callback-count (count callback-terminals)))
-            (is (= (* 2 (case [capacity operation]
-                          [0 :put] 3
-                          [1 :put] 5
-                          2))
+            (is (= (+ (* 2 (case [capacity operation]
+                               [0 :put] 3
+                               [1 :put] 5
+                               2))
+                      (* 2 (count expected)))
                    (count events)))))))))
 
 (deftest unbuffered-counterpart-after-return-completes-the-rendezvous
@@ -530,13 +563,23 @@
                     #(async/close! channel))
            :done))
         (let [events (callback-model-check! journal 0)
-              operations (hegel-history/operations events
-                                                    {:max-operations 6})]
+              trace (callback-trace events)
+              operations (:logical-operations trace)
+              targets (:target-operations trace)
+              first-logical (first operations)
+              first-target
+              (first (filter #(= (:operation-id first-logical)
+                                 (get-in % [:invoke :parent-operation-id]))
+                             targets))
+              counterpart-logical (second operations)]
           (is (= 2 @callback-count))
           (is (= 3 (count operations)))
+          (is (= 2 (count targets)))
+          (is (< (:terminal-seq first-target)
+                 (:invoke-seq counterpart-logical)))
           (is (= #{:accepted :value :closed}
                  (set (map #(get-in % [:value :result]) operations))))
-          (is (= 6 (count events))))))))
+          (is (= 10 (count events))))))))
 
 (defn- run-generated-callback-history! [backend capacity actors]
   (let [journal (history/journal)
@@ -583,9 +626,9 @@
       (throw (ex-info "generated callback was lost or duplicated"
                       {:expected (count @completions)
                        :actual @callback-count})))
-    (let [events (callback-model-check! journal capacity)]
-      (when (> (count (hegel-history/operations events
-                                                 {:max-operations 6})) 6)
+    (let [events (callback-model-check! journal capacity)
+          trace (callback-trace events)]
+      (when (> (count (:logical-operations trace)) 6)
         (throw (ex-info "generated callback history exceeded its bound" {})))
       events)))
 
@@ -608,7 +651,7 @@
             capacity [0 1]]
       (let [events (run-generated-callback-history!
                     backend capacity actors)]
-        (is (<= (count events) 10))
+        (is (<= (count events) 18))
         (is (= (range 1 (inc (count events))) (map :seq events)))))))
 
 (deftest generated-thread-and-fiber-histories-are-linearizable

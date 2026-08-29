@@ -40,6 +40,19 @@ values, and thrown objects retain their application identity. A target throw
 before callback completion closes the history as a throw and is rethrown
 unchanged.
 
+Each logical callback lifecycle has exactly one synthetic synchronous child:
+`:core-async/put-target` or `:core-async/take-target`. The child uses the same
+opaque input, records only `:target-returned` (or a privacy-safe error type),
+and names the logical callback operation as its parent. This separates target
+registration from callback completion without changing either lifecycle: a
+target child begins before the callback can close its parent. An immediate
+caller-thread callback closes the parent before the target child returns; in
+dispatched and pending cases either terminal may win the concurrent race. The
+callback model validates the one-child relation and provenance, retains target
+children for trace assertions, then removes and resequences them before the
+logical linearizability search. Target children therefore add causal evidence
+without pretending that registration return is channel completion.
+
 The callback model covers two initiators and both unbuffered and capacity-one
 channels. It checks exact lifecycle pairing, carrier provenance, value identity,
 FIFO order, real-time precedence, and the logical-close rule from core.async:

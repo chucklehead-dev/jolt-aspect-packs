@@ -131,6 +131,106 @@
 (def ^:private callback-operations
   #{:core-async/put :core-async/take :core-async/close})
 
+(def ^:private callback-target-operations
+  #{:core-async/put-target :core-async/take-target})
+
+(defn- callback-trace-invalid! [message events data]
+  (throw (ex-info message
+                  (merge {:hegel/origin
+                          "hegel.history/core-async/callback-composite"
+                          :type ::invalid-callback-composite
+                          :hegel.history/event-count (count events)
+                          :hegel.history/events events
+                          :hegel.history/evidence-truncated? false}
+                         data))))
+
+(defn- target-terminal? [target]
+  (case (:outcome target)
+    :return (= {:result :target-returned} (:value target))
+    :throw (and (exact-keys? (:value target)
+                             #{:result :error-type})
+                (= :target-threw (get-in target [:value :result]))
+                (string? (get-in target [:value :error-type])))
+    false))
+
+(defn- resequence [events]
+  (mapv (fn [index event] (assoc event :seq (inc index)))
+        (range)
+        events))
+
+(defn callback-trace
+  "Validate callback/target composition and return model-facing trace views.
+
+  Every logical put!/take! owns exactly one synchronous target child. Target
+  children are retained in `:target-operations` for causal assertions and are
+  removed (without changing observation order) from `:logical-events` before
+  linearizability search."
+  [events]
+  (let [all-operations
+        (history/operations
+         events
+         {:max-operations (* 2 callback-max-operations)
+          :name :core-async/callback-composite})
+        logical-operations
+        (filterv #(contains? callback-operations (:operation %))
+                 all-operations)
+        target-operations
+        (filterv #(contains? callback-target-operations (:operation %))
+                 all-operations)
+        unknown-operations
+        (remove #(or (contains? callback-operations (:operation %))
+                     (contains? callback-target-operations (:operation %)))
+                all-operations)
+        callback-parents
+        (filterv #(contains? #{:core-async/put :core-async/take}
+                             (:operation %))
+                 logical-operations)
+        targets-by-parent
+        (group-by #(get-in % [:invoke :parent-operation-id])
+                  target-operations)
+        parent-by-id (into {} (map (juxt :operation-id identity))
+                           callback-parents)]
+    (when (seq unknown-operations)
+      (callback-trace-invalid!
+       "callback trace contains an unknown operation" events
+       {:operations (mapv :operation unknown-operations)}))
+    (doseq [parent callback-parents]
+      (let [targets (get targets-by-parent (:operation-id parent))
+            target (first targets)
+            expected (case (:operation parent)
+                       :core-async/put :core-async/put-target
+                       :core-async/take :core-async/take-target)]
+        (when-not (= 1 (count targets))
+          (callback-trace-invalid!
+           "callback operation needs exactly one target child" events
+           {:operation-id (:operation-id parent)
+            :target-count (count targets)}))
+        (when-not (and (= expected (:operation target))
+                       (< (:invoke-seq parent) (:invoke-seq target))
+                       (< (:invoke-seq target) (:terminal-seq parent))
+                       (= (:input parent) (:input target))
+                       (= (get-in parent [:invoke :context-id])
+                          (get-in target [:invoke :context-id]))
+                       (target-terminal? target))
+          (callback-trace-invalid!
+           "callback target child has invalid provenance or result" events
+           {:operation-id (:operation-id parent)
+            :target-operation-id (:operation-id target)}))))
+    (doseq [target target-operations]
+      (when-not (contains? parent-by-id
+                           (get-in target [:invoke :parent-operation-id]))
+        (callback-trace-invalid!
+         "callback target child has no logical parent" events
+         {:target-operation-id (:operation-id target)})))
+    (let [target-ids (set (map :operation-id target-operations))]
+      {:logical-events
+       (->> events
+            (remove #(contains? target-ids (:operation-id %)))
+            vec
+            resequence)
+       :logical-operations logical-operations
+       :target-operations target-operations})))
+
 (defn callback-initial-state
   "Build callback model state for unbuffered and capacity-one channels."
   [capacities]
@@ -288,9 +388,10 @@
     (throw (ex-info "invalid core.async callback model state"
                     {:type ::invalid-callback-state})))
   (let [opts (callback-options)
-        operations (history/operations events opts)]
+        logical-events (:logical-events (callback-trace events))
+        operations (history/operations logical-events opts)]
     (when (unbuffered-pairs? initial operations)
-      (history/linearization initial callback-step events opts))))
+      (history/linearization initial callback-step logical-events opts))))
 
 (defn check-callback!
   "Return a callback-history witness or throw bounded Hegel evidence."
@@ -299,12 +400,13 @@
     (throw (ex-info "invalid core.async callback model state"
                     {:type ::invalid-callback-state})))
   (let [opts (callback-options)
-        operations (history/operations events opts)]
+        logical-events (:logical-events (callback-trace events))
+        operations (history/operations logical-events opts)]
     (when-not (unbuffered-pairs? initial operations)
       (throw (ex-info "unbuffered callback history has an unmatched rendezvous"
                       {:hegel/origin "hegel.history/core-async/callback-linearizable"
                        :type ::unmatched-rendezvous
-                       :hegel.history/event-count (count events)
-                       :hegel.history/events events
+                       :hegel.history/event-count (count logical-events)
+                       :hegel.history/events logical-events
                        :hegel.history/evidence-truncated? false})))
-    (history/check! initial callback-step events opts)))
+    (history/check! initial callback-step logical-events opts)))

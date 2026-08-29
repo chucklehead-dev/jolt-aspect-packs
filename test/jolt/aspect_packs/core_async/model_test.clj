@@ -22,6 +22,36 @@
                    {:parent-operation-id operation-id
                     :context-id :callback-model-test})))
 
+(defn- callback-composite [logical-events]
+  (let [first-target-id
+        (inc (reduce max -1 (map :operation-id logical-events)))]
+    (loop [remaining logical-events
+           next-target-id first-target-id
+           result []]
+      (if-let [event (first remaining)]
+        (if (and (= :invoke (:phase event))
+                 (contains? #{:core-async/put :core-async/take}
+                            (:operation event)))
+          (let [target-operation
+                (case (:operation event)
+                  :core-async/put :core-async/put-target
+                  :core-async/take :core-async/take-target)
+                target-invoke
+                {:operation-id next-target-id
+                 :parent-operation-id (:operation-id event)
+                 :context-id (:context-id event)
+                 :phase :invoke
+                 :operation target-operation
+                 :input (:input event)}
+                target-return
+                {:operation-id next-target-id :phase :return
+                 :value {:result :target-returned}}]
+            (recur (rest remaining) (inc next-target-id)
+                   (conj result event target-invoke target-return)))
+          (recur (rest remaining) next-target-id (conj result event)))
+        (mapv (fn [index event] (assoc event :seq (inc index)))
+              (range) result)))))
+
 (def initial (model/initial-state {:channel-a 2 :channel-b 1}))
 
 (deftest legal-sequential-fixed-buffer-history
@@ -157,7 +187,7 @@
 
 (deftest callback-capacity-one-history-is-fifo-and-close-aware
   (let [initial (model/callback-initial-state {:channel 1})
-        events [(callback-invoke 1 0 :core-async/put
+        logical [(callback-invoke 1 0 :core-async/put
                                  {:channel :channel :value :one
                                   :on-caller? true})
                 (callback-return 2 0 {:result :accepted})
@@ -168,47 +198,54 @@
                 (returned 6 2 {:result :closed})
                 (callback-invoke 7 3 :core-async/take
                                  {:channel :channel :on-caller? true})
-                (callback-return 8 3 {:result :closed})]]
+                (callback-return 8 3 {:result :closed})]
+        events (callback-composite logical)]
     (is (some? (model/check-callback! initial events)))
     (is (nil? (model/callback-linearization
-               initial (assoc-in events [3 :value :value] :wrong))))))
+               initial
+               (callback-composite
+                (assoc-in logical [3 :value :value] :wrong)))))))
 
 (deftest overlapping-unbuffered-take-and-put-form-one-rendezvous
   (let [initial (model/callback-initial-state {:channel 0})
-        events [(callback-invoke 1 0 :core-async/take
+        events (callback-composite
+                [(callback-invoke 1 0 :core-async/take
                                  {:channel :channel :on-caller? false})
                 (callback-invoke 2 1 :core-async/put
                                  {:channel :channel :value :one
                                   :on-caller? false})
                 (callback-return 3 1 {:result :accepted})
-                (callback-return 4 0 {:result :value :value :one})]
+                 (callback-return 4 0 {:result :value :value :one})])
         witness (model/check-callback! initial events)]
     (is (= [1 0] (get-in witness [:partitions 0 :order])))))
 
 (deftest close-may-linearize-before-an-overlapping-pending-operation
   (let [initial (model/callback-initial-state {:channel 0})
-        events [(callback-invoke 1 0 :core-async/take
+        events (callback-composite
+                [(callback-invoke 1 0 :core-async/take
                                  {:channel :channel :on-caller? false})
                 (invoke 2 1 :core-async/close {:channel :channel})
                 (returned 3 1 {:result :closed})
-                (callback-return 4 0 {:result :closed})]
+                 (callback-return 4 0 {:result :closed})])
         witness (model/check-callback! initial events)]
     (is (= [1 0] (get-in witness [:partitions 0 :order])))))
 
 (deftest close-may-linearize-before-an-overlapping-put
   (let [initial (model/callback-initial-state {:channel 0})
-        events [(invoke 1 0 :core-async/close {:channel :channel})
+        events (callback-composite
+                [(invoke 1 0 :core-async/close {:channel :channel})
                 (callback-invoke 2 1 :core-async/put
                                  {:channel :channel :value :one
                                   :on-caller? false})
                 (returned 3 0 {:result :closed})
-                (callback-return 4 1 {:result :closed})]
+                 (callback-return 4 1 {:result :closed})])
         witness (model/check-callback! initial events)]
     (is (= [0 1] (get-in witness [:partitions 0 :order])))))
 
 (deftest close-preserves-a-preexisting-unbuffered-put-until-taken
   (let [initial (model/callback-initial-state {:channel 0})
-        events [(callback-invoke 1 0 :core-async/put
+        events (callback-composite
+                [(callback-invoke 1 0 :core-async/put
                                  {:channel :channel :value :one
                                   :on-caller? false})
                 (invoke 2 1 :core-async/close {:channel :channel})
@@ -216,13 +253,14 @@
                 (callback-invoke 4 2 :core-async/take
                                  {:channel :channel :on-caller? false})
                 (callback-return 5 0 {:result :accepted})
-                (callback-return 6 2 {:result :value :value :one})]
+                 (callback-return 6 2 {:result :value :value :one})])
         witness (model/check-callback! initial events)]
     (is (= [0 1 2] (get-in witness [:partitions 0 :order])))))
 
 (deftest close-preserves-capacity-one-pending-put-ownership
   (let [initial (model/callback-initial-state {:channel 1})
-        events [(callback-invoke 1 0 :core-async/put
+        events (callback-composite
+                [(callback-invoke 1 0 :core-async/put
                                  {:channel :channel :value :buffered
                                   :on-caller? true})
                 (callback-return 2 0 {:result :accepted})
@@ -237,32 +275,36 @@
                 (callback-return 8 1 {:result :accepted})
                 (callback-invoke 9 4 :core-async/take
                                  {:channel :channel :on-caller? false})
-                (callback-return 10 4 {:result :value :value :pending})]
+                 (callback-return 10 4 {:result :value :value :pending})])
         witness (model/check-callback! initial events)]
     (is (= [0 1 2 3 4] (get-in witness [:partitions 0 :order])))))
 
 (deftest callback-model-rejects-lifecycle-and-carrier-corruption
   (let [initial (model/callback-initial-state {:channel 1})
-        legal [(callback-invoke 1 0 :core-async/put
-                                {:channel :channel :value :one
-                                 :on-caller? true})
-               (callback-return 2 0 {:result :accepted})]]
+        logical [(callback-invoke 1 0 :core-async/put
+                                  {:channel :channel :value :one
+                                   :on-caller? true})
+                 (callback-return 2 0 {:result :accepted})]
+        legal (callback-composite logical)
+        corrupted (callback-composite
+                   (assoc-in logical [1 :value :carrier
+                                      :parent-operation-id] 7))]
     (is (some? (model/callback-linearization initial legal)))
-    (is (nil? (model/callback-linearization
-               initial
-               (assoc-in legal [1 :value :carrier :parent-operation-id] 7))))
+    (is (nil? (model/callback-linearization initial corrupted)))
     (is (thrown? Exception
                  (model/check-callback!
-                  initial (conj legal
-                                (callback-return 3 0
-                                                 {:result :accepted})))))))
+                  initial
+                  (callback-composite
+                   (conj logical
+                         (callback-return 3 0 {:result :accepted}))))))))
 
 (deftest unbuffered-completed-put-requires-a-matching-take
   (let [initial (model/callback-initial-state {:channel 0})
-        unmatched [(callback-invoke 1 0 :core-async/put
-                                    {:channel :channel :value :one
-                                     :on-caller? true})
-                   (callback-return 2 0 {:result :accepted})]
+        unmatched (callback-composite
+                   [(callback-invoke 1 0 :core-async/put
+                                     {:channel :channel :value :one
+                                      :on-caller? true})
+                    (callback-return 2 0 {:result :accepted})])
         failure (try
                   (model/check-callback! initial unmatched)
                   nil
@@ -270,3 +312,38 @@
     (is (nil? (model/callback-linearization initial unmatched)))
     (is (= :jolt.aspect-packs.core-async.model/unmatched-rendezvous
            (:type (ex-data failure))))))
+
+(deftest callback-composite-requires-one-correctly-parented-target
+  (let [logical [(callback-invoke 1 0 :core-async/put
+                                  {:channel :channel :value :one
+                                   :on-caller? true})
+                 (callback-return 2 0 {:result :accepted})]
+        events (callback-composite logical)
+        trace (model/callback-trace events)
+        target (first (:target-operations trace))]
+    (is (= 1 (count (:target-operations trace))))
+    (is (= :core-async/put-target (:operation target)))
+    (is (= 0 (get-in target [:invoke :parent-operation-id])))
+    (is (= (:input (first (:logical-operations trace))) (:input target)))
+    (is (thrown? Exception
+                 (model/callback-trace
+                  (vec (remove #(= (:operation-id target) (:operation-id %))
+                               events)))))
+    (is (thrown? Exception
+                 (model/callback-trace
+                  (assoc-in events [1 :parent-operation-id] 99))))))
+
+(deftest callback-composite-requires-target-to-begin-before-parent-closes
+  (let [logical [(callback-invoke 1 0 :core-async/put
+                                  {:channel :channel :value :one
+                                   :on-caller? true})
+                 (callback-return 2 0 {:result :accepted})]
+        events (callback-composite logical)
+        by-position [(nth events 0) (nth events 3)
+                     (nth events 1) (nth events 2)]
+        target-after-parent
+        (mapv (fn [index event] (assoc event :seq (inc index)))
+              (range) by-position)]
+    (is (some? (model/callback-trace events)))
+    (is (thrown? Exception
+                 (model/callback-trace target-after-parent)))))

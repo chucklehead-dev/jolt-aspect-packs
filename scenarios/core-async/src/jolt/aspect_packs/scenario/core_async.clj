@@ -86,6 +86,7 @@
 
 (defn- run-callbacks! [backend plain?]
   (let [journal (history/journal)
+        observations (atom [])
         run
         (fn []
           (binding [history/*journal* journal
@@ -95,37 +96,42 @@
                   caller (Thread/currentThread)
                   callback-count (atom 0)
                   callback
-                  (fn [completion expected-value expected-caller?
-                       expected-parent]
+                  (fn [completion expected-operation expected-value
+                       expected-caller?]
                     (fn [value]
                       (swap! callback-count inc)
-                      (deliver completion
-                               {:value value
-                                :expected-value expected-value
-                                :caller? (identical? caller
-                                                     (Thread/currentThread))
-                                :expected-caller? expected-caller?
-                                :expected-parent expected-parent
-                                :parent history/*parent-operation-id*
-                                :context history/*context-id*})))
+                      (let [observation
+                            {:operation expected-operation
+                             :value value
+                             :expected-value expected-value
+                             :caller? (identical? caller
+                                                  (Thread/currentThread))
+                             :expected-caller? expected-caller?
+                             :parent history/*parent-operation-id*
+                             :context history/*context-id*}]
+                        (swap! observations conj observation)
+                        (deliver completion observation))))
                   immediate-put (promise)
                   immediate-take (promise)
                   pending-take (promise)
                   pending-put (promise)]
               (when-not (true? (observed-put
                                 channel :immediate-put
-                                (callback immediate-put true true 0) true))
+                                (callback immediate-put :core-async/put
+                                          true true) true))
                 (throw (ex-info "immediate put! returned the wrong result" {})))
               (await! immediate-put)
               (when-not (nil? (observed-take
                                channel
-                               (callback immediate-take :immediate-put false 1)
+                               (callback immediate-take :core-async/take
+                                         :immediate-put false)
                                false))
                 (throw (ex-info "immediate take! returned the wrong result" {})))
               (await! immediate-take)
               (when-not (nil? (observed-take
                                channel
-                               (callback pending-take :pending-take nil 2)
+                               (callback pending-take :core-async/take
+                                         :pending-take nil)
                                true))
                 (throw (ex-info "pending take! returned the wrong result" {})))
               (async/>!! channel :pending-take)
@@ -133,7 +139,8 @@
               (async/>!! channel :occupied)
               (when-not (true? (observed-put
                                 channel :pending-put
-                                (callback pending-put true false 3) false))
+                                (callback pending-put :core-async/put
+                                          true false) false))
                 (throw (ex-info "pending put! returned the wrong result" {})))
               (when-not (= :occupied (async/<!! channel))
                 (throw (ex-info "pending put! setup lost its buffered value" {})))
@@ -141,14 +148,14 @@
               (doseq [completion [immediate-put immediate-take
                                   pending-take pending-put]]
                 (let [{:keys [value expected-value caller? expected-caller?
-                              parent expected-parent context]
+                              parent context]
                        :as observation}
                       (await! completion)]
                   (when-not (and (= expected-value value)
                                  (or (nil? expected-caller?)
                                      (= expected-caller? caller?))
                                  (or plain?
-                                     (and (= expected-parent parent)
+                                     (and (integer? parent)
                                           (= (keyword
                                               "core-async-callback-scenario"
                                               (name backend))
@@ -186,14 +193,29 @@
                           {:backend backend :events events})))
         (do
           (history/assert-complete! journal)
-          (when-not (= #{:core-async/put :core-async/take}
-                       (set (map :operation
-                                 (filter #(= :invoke (:phase %)) events))))
-            (throw (ex-info "woven callback history missed an operation"
-                            {:backend backend :events events})))
-          (when-not (= 12 (count events))
-            (throw (ex-info "woven callback history has wrong lifecycle count"
-                            {:backend backend :events events})))
+          (let [trace (model/callback-trace events)
+                logical (:logical-operations trace)
+                targets (:target-operations trace)
+                logical-by-id (into {} (map (juxt :operation-id identity))
+                                    logical)]
+            ;; The smoke deliberately uses blocking, unobserved counterparts to
+            ;; complete two pending callbacks, so it is a partial history rather
+            ;; than an input to the closed-world linearizability model. The
+            ;; generated provider tests exercise that model with complete traces.
+            (when-not (= #{:core-async/put :core-async/take}
+                         (set (map :operation logical)))
+              (throw (ex-info "woven callback history missed an operation"
+                              {:backend backend :events events})))
+            (when-not (and (= 6 (count logical))
+                           (= 6 (count targets))
+                           (= 24 (count events)))
+              (throw (ex-info "woven callback history has wrong lifecycle count"
+                              {:backend backend :events events})))
+            (doseq [{:keys [operation parent]} @observations]
+                (when-not (= operation (:operation (get logical-by-id parent)))
+                  (throw (ex-info "callback carrier names the wrong logical operation"
+                                  {:backend backend
+                                   :operation operation :parent parent})))))
           (let [rendered (pr-str events)]
             (when (some #(.contains rendered %)
                         [":immediate-put" ":pending-take"
@@ -201,18 +223,12 @@
                          ":nil-callback-put"])
               (throw (ex-info "woven callback history retained source values"
                               {:backend backend :events events}))))
-          (doseq [[invoke terminal]
-                  (partition 2 events)]
-            (when-not (and (= (:operation-id invoke)
-                              (:operation-id terminal))
-                           (= :invoke (:phase invoke))
-                           (= :return (:phase terminal))
-                           (= {:parent-operation-id (:operation-id invoke)
-                               :context-id (:context-id invoke)}
-                              (get-in terminal [:value :carrier])))
+          (doseq [operation (:logical-operations (model/callback-trace events))]
+            (when-not (= {:parent-operation-id (:operation-id operation)
+                          :context-id (get-in operation [:invoke :context-id])}
+                         (get-in operation [:terminal :value :carrier]))
               (throw (ex-info "callback lifecycle was not exactly once"
-                              {:backend backend
-                               :invoke invoke :terminal terminal}))))))
+                              {:backend backend :operation operation}))))))
       events)))
 
 (defn -main [& args]

@@ -12,6 +12,16 @@
 (def ^:private callback-operation-ids
   #{:core-async/put :core-async/take})
 
+(defn- target-operation-id [operation]
+  (case operation
+    :core-async/put :core-async/put-target
+    :core-async/take :core-async/take-target))
+
+(defn- target-join-point [join-point operation]
+  (-> join-point
+      (assoc :id (target-operation-id operation))
+      (update :site-id str "/target")))
+
 (defn- invalid! [message data]
   (throw (ex-info message (assoc data :kind :core-async/invalid-operation))))
 
@@ -80,6 +90,11 @@
   {:result :target-threw
    :error-type (str (type error))})
 
+(defn- target-return-result [_]
+  ;; The target's synchronous registration result remains application-owned.
+  ;; The child only records that it returned, never the value itself.
+  {:result :target-returned})
+
 (defn around-callback-operation
   "Record an async put!/take! lifecycle by replacing only its callback.
 
@@ -122,7 +137,14 @@
                       (apply callback callback-args)))))
               replacement (assoc args callback-index wrapped)]
           (try
-            (proceed replacement)
+            (history/invoke!
+             journal
+             (target-join-point join-point operation)
+             input
+             {:parent-operation-id (history/operation-id handle)
+              :return-fn target-return-result
+              :throw-fn target-throw-result}
+             #(proceed replacement))
             (catch Throwable error
               (try
                 (history/try-throw! handle (target-throw-result error))
