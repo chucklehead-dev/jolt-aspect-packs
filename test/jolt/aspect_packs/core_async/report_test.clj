@@ -35,7 +35,7 @@
     :contract :replace-args-v1}})
 
 (def expected-resource
-  "META-INF/jolt/aspects/packs/core-async-a4e5747.edn")
+  "META-INF/jolt/aspects/packs/core-async-db00fad.edn")
 
 (defn -main [report-path]
   (let [report (edn/read-string (slurp report-path))

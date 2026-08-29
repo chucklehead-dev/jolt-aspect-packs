@@ -7,7 +7,8 @@ bounded surface is deliberately small:
 - fixed positive-capacity channels;
 - `offer!`, `poll!`, and `close!` at explicit application call sites;
 - callback-aware `put!` arity 4 and `take!` arity 3 call sites; and
-- at most eight completed operations per checked history.
+- at most eight fixed-buffer operations or six callback operations per checked
+  history.
 
 The provider retains neither channel objects nor application values in emitted
 events. Journal-local opaque tokens preserve FIFO identity, while terminal
@@ -38,6 +39,22 @@ though the history lifecycle closes exactly once. Callback arguments, return
 values, and thrown objects retain their application identity. A target throw
 before callback completion closes the history as a throw and is rethrown
 unchanged.
+
+The callback model covers two initiators and both unbuffered and capacity-one
+channels. It checks exact lifecycle pairing, carrier provenance, value identity,
+FIFO order, real-time precedence, and the logical-close rule from core.async:
+close completes pending takes, but a put that was already pending remains until
+a later take releases its value. Cleanup therefore uses bounded post-close
+takes rather than assuming close cancels puts. Linearization search decides
+which side of close an overlapping put occupies: an admitted put may precede
+close and later be released by a take, while a put ordered after close returns
+closed. Invocation and callback sequence numbers do not impose an extra close
+boundary on overlapping operations.
+
+The deterministic regressions cover both capacity-one pending puts and the
+fiber registration race that previously let close overtake an operation after
+its public call had returned. The generated two-actor histories keep both
+cases under the same bounded oracle.
 
 This is not yet a claim about every core.async operation. In particular:
 

@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing]]
             [hegel.clojure-test :as hegel-test]
             [hegel.generator :as g]
+            [hegel.history :as hegel-history]
             [jolt.fibers :as fibers]
             [jolt.aspect-packs.core-async.model :as model]
             [jolt.aspect-packs.core-async.provider :as provider]
@@ -30,6 +31,58 @@
     :core-async/take
     (fn [[channel callback on-caller?]]
       (async/take! channel callback on-caller?))))
+
+(defn- await-callback!
+  ([completion] (await-callback! completion {}))
+  ([completion context]
+   (let [result (deref completion 5000 ::timed-out)]
+     (when (= ::timed-out result)
+       (throw (ex-info "core.async callback did not complete"
+                       (assoc context
+                              :hegel/origin
+                              "core-async/callback-completion"))))
+     result)))
+
+(defn- run-initiator! [backend f]
+  (let [worker (case backend
+                 :thread (future (f))
+                 :fiber (fibers/spawn f))
+        result (case backend
+                 :thread (deref worker 7000 ::timed-out)
+                 :fiber (fibers/join worker 7000 ::timed-out))]
+    (when (= ::timed-out result)
+      (throw (ex-info "core.async initiator did not complete"
+                      {:backend backend
+                       :hegel/origin "core-async/initiator-completion"})))
+    result))
+
+(defn- callback! [journal operation channel value on-caller?
+                  callback-count completions]
+  (let [completion (promise)
+        callback (fn [result]
+                   (swap! callback-count inc)
+                   (deliver completion {:operation operation :result result}))
+        args (case operation
+               :put [channel value callback on-caller?]
+               :take [channel callback on-caller?])]
+    (swap! completions conj completion)
+    (invoke-callback! journal
+                      (case operation
+                        :put :core-async/put
+                        :take :core-async/take)
+                      args
+                      (core-async-proceed
+                       (case operation
+                         :put :core-async/put
+                         :take :core-async/take)))))
+
+(defn- callback-model-check! [journal capacity]
+  (history/assert-complete! journal)
+  (let [events (history/events journal)
+        channel-token (get-in events [0 :input :channel])]
+    (model/check-callback!
+     (model/callback-initial-state {channel-token capacity}) events)
+    events))
 
 (defn- run-action! [journal channel backend [operation value]]
   (case backend
@@ -364,6 +417,199 @@
                                   (get-in events [1 :value :value])))))
           (is (true? (history/assert-complete! journal))))
         (async/close! channel)))))
+
+(deftest close-completes-takes-and-preserves-preexisting-puts
+  (doseq [backend [:thread :fiber]
+          capacity [0 1]
+          operation [:put :take]]
+    (testing [backend capacity operation]
+      (let [journal (history/journal)
+            channel (async/chan capacity)
+            callback-count (atom 0)
+            completions (atom [])]
+        (run-initiator!
+         backend
+         (fn []
+           ;; A capacity-one pending put needs one already accepted value.
+           (when (and (= :put operation) (= 1 capacity))
+             (callback! journal :put channel :buffered true
+                        callback-count completions)
+             (await-callback! (first @completions)))
+           (let [target-result
+                 (callback! journal operation channel :pending false
+                            callback-count completions)]
+             (when-not (= (if (= :put operation) true nil) target-result)
+               (throw (ex-info "callback target returned the wrong result"
+                               {:operation operation
+                                :target-result target-result}))))
+           (when (empty? (history/open-operation-ids journal))
+             (throw (ex-info "callback operation unexpectedly completed"
+                             {:backend backend :capacity capacity
+                              :operation operation})))
+           (invoke! journal :core-async/close [channel]
+                    #(async/close! channel))
+           (if (= :take operation)
+             (await-callback! (last @completions)
+                              {:backend backend :capacity capacity
+                               :operation operation})
+             (do
+               ;; Official core.async close semantics retain the pending put.
+               ;; A taker must release it; capacity one first drains the value
+               ;; that made this put pending.
+               (dotimes [_ (if (zero? capacity) 1 2)]
+                 (callback! journal :take channel nil false
+                            callback-count completions)
+                 (await-callback! (last @completions)
+                                  {:backend backend :capacity capacity
+                                   :operation :cleanup-take}))
+               (await-callback! (if (zero? capacity)
+                                  (first @completions)
+                                  (second @completions))
+                                {:backend backend :capacity capacity
+                                 :operation :pending-put})))
+           :done))
+        (let [observed (mapv #(-> (await-callback! %) :result)
+                             @completions)
+              expected (case [capacity operation]
+                         [0 :put] [true :pending]
+                         [1 :put] [true true :buffered :pending]
+                         [0 :take] [nil]
+                         [1 :take] [nil])]
+          (is (= expected observed))
+          (history/assert-complete! journal)
+          (let [events (history/events journal)
+                channel-token (get-in events [0 :input :channel])
+                callback-terminals
+                (filter #(and (= :return (:phase %))
+                              (contains? (:value %) :carrier)) events)]
+            (is (some? (model/callback-linearization
+                        (model/callback-initial-state
+                         {channel-token capacity}) events)))
+            (is (= (count expected) @callback-count))
+            (is (= @callback-count (count callback-terminals)))
+            (is (= (* 2 (case [capacity operation]
+                          [0 :put] 3
+                          [1 :put] 5
+                          2))
+                   (count events)))))))))
+
+(deftest unbuffered-counterpart-after-return-completes-the-rendezvous
+  (doseq [backend [:thread :fiber]
+          first-operation [:put :take]]
+    (testing [backend first-operation]
+      (let [journal (history/journal)
+            channel (async/chan)
+            value (Object.)
+            callback-count (atom 0)
+            completions (atom [])]
+        (run-initiator!
+         backend
+         (fn []
+           (let [target-result
+                 (callback! journal first-operation channel value false
+                            callback-count completions)]
+             (when-not (= (if (= :put first-operation) true nil)
+                          target-result)
+               (throw (ex-info "first callback target returned the wrong result"
+                               {:operation first-operation
+                                :target-result target-result}))))
+           (when-not (= [0] (history/open-operation-ids journal))
+             (throw (ex-info "first unbuffered operation did not remain pending"
+                             {:backend backend :operation first-operation})))
+           (let [counterpart (case first-operation :put :take :take :put)
+                 target-result
+                 (callback! journal counterpart channel value false
+                            callback-count completions)]
+             (when-not (= (if (= :put counterpart) true nil) target-result)
+               (throw (ex-info "counterpart returned the wrong result"
+                               {:operation counterpart
+                                :target-result target-result}))))
+           (doseq [completion @completions]
+             (await-callback! completion))
+           (invoke! journal :core-async/close [channel]
+                    #(async/close! channel))
+           :done))
+        (let [events (callback-model-check! journal 0)
+              operations (hegel-history/operations events
+                                                    {:max-operations 6})]
+          (is (= 2 @callback-count))
+          (is (= 3 (count operations)))
+          (is (= #{:accepted :value :closed}
+                 (set (map #(get-in % [:value :result]) operations))))
+          (is (= 6 (count events))))))))
+
+(defn- run-generated-callback-history! [backend capacity actors]
+  (let [journal (history/journal)
+        channel (async/chan capacity)
+        start (promise)
+        callback-count (atom 0)
+        completions (atom [])
+        body
+        (fn [actions]
+          @start
+          (doseq [[operation value on-caller?] actions]
+            (case operation
+              :put (callback! journal :put channel value on-caller?
+                              callback-count completions)
+              :take (callback! journal :take channel nil on-caller?
+                               callback-count completions)
+              :close (invoke! journal :core-async/close [channel]
+                              #(async/close! channel))))
+          :done)
+        workers
+        (mapv (fn [actions]
+                (case backend
+                  :thread (future (body actions))
+                  :fiber (fibers/spawn #(body actions))))
+              actors)]
+    (deliver start true)
+    (doseq [worker workers]
+      (let [result (case backend
+                     :thread (deref worker 5000 ::timed-out)
+                     :fiber (fibers/join worker 5000 ::timed-out))]
+        (when-not (= :done result)
+          (throw (ex-info "generated callback initiator did not complete"
+                          {:backend backend :result result})))))
+    ;; Close completes pending takes. Two bounded post-close takes release up to
+    ;; two pre-close puts (one initiated by each actor), as required by the
+    ;; official logical-close contract.
+    (invoke! journal :core-async/close [channel] #(async/close! channel))
+    (dotimes [_ 2]
+      (callback! journal :take channel nil false callback-count completions)
+      (await-callback! (last @completions)))
+    (doseq [completion @completions]
+      (await-callback! completion))
+    (when-not (= (count @completions) @callback-count)
+      (throw (ex-info "generated callback was lost or duplicated"
+                      {:expected (count @completions)
+                       :actual @callback-count})))
+    (let [events (callback-model-check! journal capacity)]
+      (when (> (count (hegel-history/operations events
+                                                 {:max-operations 6})) 6)
+        (throw (ex-info "generated callback history exceeded its bound" {})))
+      events)))
+
+(deftest generated-two-actor-callback-histories-are-linearizable
+  (hegel-test/with
+    {:name "core-async-callback-history-v1"
+     :test-cases 60
+     :database ""
+     :derandomize? true
+     :verbosity :quiet}
+    [actors
+     (g/vector
+      {:size 2}
+      (g/vector
+       {:size 1}
+       (g/tuple (g/sampled-from [:put :take :close])
+                (g/integer 0 3)
+                (g/boolean))))]
+    (doseq [backend [:thread :fiber]
+            capacity [0 1]]
+      (let [events (run-generated-callback-history!
+                    backend capacity actors)]
+        (is (<= (count events) 10))
+        (is (= (range 1 (inc (count events))) (map :seq events)))))))
 
 (deftest generated-thread-and-fiber-histories-are-linearizable
   (hegel-test/with

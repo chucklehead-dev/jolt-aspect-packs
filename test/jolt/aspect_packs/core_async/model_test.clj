@@ -12,6 +12,16 @@
 (defn- thrown [seq operation-id value]
   {:seq seq :operation-id operation-id :phase :throw :value value})
 
+(defn- callback-invoke [seq operation-id operation input]
+  (assoc (invoke seq operation-id operation input)
+         :context-id :callback-model-test))
+
+(defn- callback-return [seq operation-id value]
+  (returned seq operation-id
+            (assoc value :carrier
+                   {:parent-operation-id operation-id
+                    :context-id :callback-model-test})))
+
 (def initial (model/initial-state {:channel-a 2 :channel-b 1}))
 
 (deftest legal-sequential-fixed-buffer-history
@@ -144,3 +154,119 @@
     (is (= {2 2}
            (frequencies (map #(count (:operations %))
                              (:partitions witness)))))))
+
+(deftest callback-capacity-one-history-is-fifo-and-close-aware
+  (let [initial (model/callback-initial-state {:channel 1})
+        events [(callback-invoke 1 0 :core-async/put
+                                 {:channel :channel :value :one
+                                  :on-caller? true})
+                (callback-return 2 0 {:result :accepted})
+                (callback-invoke 3 1 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (callback-return 4 1 {:result :value :value :one})
+                (invoke 5 2 :core-async/close {:channel :channel})
+                (returned 6 2 {:result :closed})
+                (callback-invoke 7 3 :core-async/take
+                                 {:channel :channel :on-caller? true})
+                (callback-return 8 3 {:result :closed})]]
+    (is (some? (model/check-callback! initial events)))
+    (is (nil? (model/callback-linearization
+               initial (assoc-in events [3 :value :value] :wrong))))))
+
+(deftest overlapping-unbuffered-take-and-put-form-one-rendezvous
+  (let [initial (model/callback-initial-state {:channel 0})
+        events [(callback-invoke 1 0 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (callback-invoke 2 1 :core-async/put
+                                 {:channel :channel :value :one
+                                  :on-caller? false})
+                (callback-return 3 1 {:result :accepted})
+                (callback-return 4 0 {:result :value :value :one})]
+        witness (model/check-callback! initial events)]
+    (is (= [1 0] (get-in witness [:partitions 0 :order])))))
+
+(deftest close-may-linearize-before-an-overlapping-pending-operation
+  (let [initial (model/callback-initial-state {:channel 0})
+        events [(callback-invoke 1 0 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (invoke 2 1 :core-async/close {:channel :channel})
+                (returned 3 1 {:result :closed})
+                (callback-return 4 0 {:result :closed})]
+        witness (model/check-callback! initial events)]
+    (is (= [1 0] (get-in witness [:partitions 0 :order])))))
+
+(deftest close-may-linearize-before-an-overlapping-put
+  (let [initial (model/callback-initial-state {:channel 0})
+        events [(invoke 1 0 :core-async/close {:channel :channel})
+                (callback-invoke 2 1 :core-async/put
+                                 {:channel :channel :value :one
+                                  :on-caller? false})
+                (returned 3 0 {:result :closed})
+                (callback-return 4 1 {:result :closed})]
+        witness (model/check-callback! initial events)]
+    (is (= [0 1] (get-in witness [:partitions 0 :order])))))
+
+(deftest close-preserves-a-preexisting-unbuffered-put-until-taken
+  (let [initial (model/callback-initial-state {:channel 0})
+        events [(callback-invoke 1 0 :core-async/put
+                                 {:channel :channel :value :one
+                                  :on-caller? false})
+                (invoke 2 1 :core-async/close {:channel :channel})
+                (returned 3 1 {:result :closed})
+                (callback-invoke 4 2 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (callback-return 5 0 {:result :accepted})
+                (callback-return 6 2 {:result :value :value :one})]
+        witness (model/check-callback! initial events)]
+    (is (= [0 1 2] (get-in witness [:partitions 0 :order])))))
+
+(deftest close-preserves-capacity-one-pending-put-ownership
+  (let [initial (model/callback-initial-state {:channel 1})
+        events [(callback-invoke 1 0 :core-async/put
+                                 {:channel :channel :value :buffered
+                                  :on-caller? true})
+                (callback-return 2 0 {:result :accepted})
+                (callback-invoke 3 1 :core-async/put
+                                 {:channel :channel :value :pending
+                                  :on-caller? false})
+                (invoke 4 2 :core-async/close {:channel :channel})
+                (returned 5 2 {:result :closed})
+                (callback-invoke 6 3 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (callback-return 7 3 {:result :value :value :buffered})
+                (callback-return 8 1 {:result :accepted})
+                (callback-invoke 9 4 :core-async/take
+                                 {:channel :channel :on-caller? false})
+                (callback-return 10 4 {:result :value :value :pending})]
+        witness (model/check-callback! initial events)]
+    (is (= [0 1 2 3 4] (get-in witness [:partitions 0 :order])))))
+
+(deftest callback-model-rejects-lifecycle-and-carrier-corruption
+  (let [initial (model/callback-initial-state {:channel 1})
+        legal [(callback-invoke 1 0 :core-async/put
+                                {:channel :channel :value :one
+                                 :on-caller? true})
+               (callback-return 2 0 {:result :accepted})]]
+    (is (some? (model/callback-linearization initial legal)))
+    (is (nil? (model/callback-linearization
+               initial
+               (assoc-in legal [1 :value :carrier :parent-operation-id] 7))))
+    (is (thrown? Exception
+                 (model/check-callback!
+                  initial (conj legal
+                                (callback-return 3 0
+                                                 {:result :accepted})))))))
+
+(deftest unbuffered-completed-put-requires-a-matching-take
+  (let [initial (model/callback-initial-state {:channel 0})
+        unmatched [(callback-invoke 1 0 :core-async/put
+                                    {:channel :channel :value :one
+                                     :on-caller? true})
+                   (callback-return 2 0 {:result :accepted})]
+        failure (try
+                  (model/check-callback! initial unmatched)
+                  nil
+                  (catch Throwable error error))]
+    (is (nil? (model/callback-linearization initial unmatched)))
+    (is (= :jolt.aspect-packs.core-async.model/unmatched-rendezvous
+           (:type (ex-data failure))))))

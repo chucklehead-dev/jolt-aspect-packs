@@ -1,6 +1,6 @@
 {:schema 1
  :library {:id jolt-lang/jolt
-           :version "a4e5747344947163cc3d717e476795ad8f153376"}
+           :version "db00fad945f9145d4a5452039da18f9957a9d0bc"}
  :aspects
  [{:id :core-async/offer
    :match {:ns jolt.aspect-packs.scenario.core-async
