@@ -68,6 +68,14 @@ privacy-safe history from one application operation. Neither OTel nor the
 target HTTP library is added to this repository's base runtime dependencies.
 See [the HTTP-server pack notes](docs/http-server.md).
 
+The database pack targets the exact `io.github.casselc/db` SPI revision and its
+published stable execute seam. Its canonical history provider records only a
+closed operation/system classification, sanitized structural statement
+fingerprint, and safely available row count. A compiled dual-consumer scenario
+selects the existing OTel provider and the history provider in a stable order
+without adding OTel dependencies to the database or adapter libraries. See
+[the database pack notes](docs/database.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh
@@ -80,7 +88,7 @@ Run the compiled scenario with the current aspect-capable compiler checkout:
 
 ```sh
 /home/chuck/ai-src/tools/jolt-with-chez-10.4.1 \
-  env JOLT_ASPECT_JOLT=/home/chuck/ai-src/worktrees/jolt-v0728-aspects-ffi-loans/bin/jolt \
+  env JOLT_ASPECT_JOLT=/path/to/jolt/target/release/jolt \
   make aspect-smoke
 ```
 
@@ -105,7 +113,15 @@ Run the HTTP-server dual-consumer source conformance gate:
   jolt -M:http-server-conformance
 ```
 
+Run the exact database source and dual-consumer conformance gate:
+
+```sh
+/home/chuck/ai-src/tools/jolt-with-chez-10.4.1 \
+  env JOLT_CACHE_DIR=/tmp/jolt-aspect-packs-db-source-cache \
+  jolt -M:db-conformance
+```
+
 See [the central pack contract](docs/CONTRACT.md) for the compatibility and
-verification rules. The next packs will cover database SPI, Samizdat
+verification rules. The next packs will cover Samizdat
 control-loop seams, and lifecycle histories discovered by the current
 cross-library correctness work.

@@ -1,7 +1,7 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
 
-.PHONY: test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
+.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
 
 test:
 	$(JOLT) -M:test
@@ -15,7 +15,27 @@ glimmer-source-test:
 http-server-source-test:
 	$(JOLT) -M:http-server-conformance
 
-aspect-smoke: http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
+aspect-smoke: db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
+
+db-aspect-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/db && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.db \
+	    -o target/db-aspect-scenario
+	@scenarios/db/target/db-aspect-scenario
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"] :deps {io.github.casselc/db {:git/url "https://github.com/casselc/db.git" :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}}}' \
+	  -m jolt.aspect-packs.db.report-test \
+	  scenarios/db/target/aspects.edn
+
+db-plain-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/db-plain && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.db \
+	    -o target/db-plain-scenario
+	@scenarios/db-plain/target/db-plain-scenario plain
 
 http-client-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -61,3 +81,6 @@ glimmer-aspect-smoke:
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.glimmer.report-test \
 	  scenarios/glimmer/target/aspects.edn
+
+db-source-test:
+	$(JOLT) -M:db-conformance

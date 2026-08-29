@@ -1,6 +1,29 @@
 {:schema 1
  :targets
- {jolt-lang/http-client
+ {jolt-lang/db
+  {:git/url "https://github.com/casselc/db.git"
+   :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"
+   :compiler {:id jolt-lang/jolt
+              :git/sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
+              :chez "10.4.1"}
+   :seam-revision "a55c554a66d8f5e9e5198e238773f8218f6050d7"
+   :manifest "META-INF/jolt/aspects/packs/db-a55c554.edn"
+   :scenario "scenarios/db"
+   :plain-scenario "scenarios/db-plain"
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-otel-instrumentation-db
+     :git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-db.git"
+     :git/sha "0b6a5b850bb959563cff602ec684bb48dcc2f541"
+     :provider otel.instrumentation.db/aspect-provider}
+    {:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.db.provider/aspect-provider}]
+   :inspected-integrations
+   [{:id io.github.chucklehead-dev/jolt-chdb
+     :git/sha "6321a0a23a06e396c684d303f3cb4d31bebc8d9f"}
+    {:id io.github.chucklehead-dev/jolt-duckdb
+     :git/sha "facd634492ff1d984871a0d37122ab527b7648aa"}]}
+
+  jolt-lang/http-client
  {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"
    :manifest "META-INF/jolt/aspects/packs/http-client-12b78ed.edn"

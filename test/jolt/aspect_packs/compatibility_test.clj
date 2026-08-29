@@ -12,7 +12,7 @@
    {:pack-sha "40679054dc4786e43577cb9788f69db0f9a2a401"
     :target-sha "a00979f5e55bc8deb98291993643ff1ccf50a57b"
     :upstream-sha "04825632ed96a77a1c6ba1921c0a31280a3daade"
-    :compiler-sha "a9edfdf109911668917061baefc0aed1f402b366"
+    :compiler-sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
     :pack-clean? true
     :target-clean? true
     :compiler-clean? true}

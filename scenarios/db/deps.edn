@@ -1,0 +1,16 @@
+{:paths ["src"]
+ :deps
+ {io.github.casselc/db
+  {:git/url "https://github.com/casselc/db.git"
+   :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}
+  io.github.chucklehead-dev/jolt-otel-instrumentation-db
+  {:git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-db.git"
+   :git/sha "0b6a5b850bb959563cff602ec684bb48dcc2f541"}
+  io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/build
+ {:aspects
+  [{:resource "META-INF/jolt/aspects/packs/db-a55c554.edn"
+    :providers [otel.instrumentation.db/aspect-provider
+                jolt.aspect-packs.db.provider/aspect-provider]}]
+  :aspect-report "target/aspects.edn"}}
