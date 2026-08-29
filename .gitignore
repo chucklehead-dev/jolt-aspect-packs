@@ -3,4 +3,4 @@
 /.cpcache/
 /.nrepl-port
 scenarios/*/target/
-
+scenarios/*/.jolt/

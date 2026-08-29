@@ -58,6 +58,16 @@ records only a coarse root shape and validates real success and failure paths
 against an in-memory backend, without exposing native handles or UI content.
 See [the Glimmer pack notes](docs/glimmer.md).
 
+The HTTP-server pack targets jolt-http's normalized Ring handler and sanitized
+response seams at `c6effc3a04be1467e66da433b879a8a73a352228`. Its source
+conformance gate composes the production OpenTelemetry provider with the
+neutral Hegel history provider in the same explicit outer-to-inner order used
+by the compiled scenario. It proves remote-parented server spans, response and
+error semantics, a duration metric, a correlated exception log, and a bounded
+privacy-safe history from one application operation. Neither OTel nor the
+target HTTP library is added to this repository's base runtime dependencies.
+See [the HTTP-server pack notes](docs/http-server.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh
@@ -88,7 +98,14 @@ server:
 /home/chuck/ai-src/tools/jolt-with-chez-10.4.1 jolt -M:glimmer-conformance
 ```
 
+Run the HTTP-server dual-consumer source conformance gate:
+
+```sh
+/home/chuck/ai-src/tools/jolt-with-chez-10.4.1 \
+  jolt -M:http-server-conformance
+```
+
 See [the central pack contract](docs/CONTRACT.md) for the compatibility and
-verification rules. The next packs will cover HTTP server, database SPI,
-Samizdat control-loop seams, and lifecycle histories discovered by the current
+verification rules. The next packs will cover database SPI, Samizdat
+control-loop seams, and lifecycle histories discovered by the current
 cross-library correctness work.

@@ -28,8 +28,19 @@
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
      :git/sha "a4bd170ba9a7242739e694d872fe65c611e3df6f"}}
-   :main-opts ["-m" "jolt.aspect-packs.glimmer.conformance-runner"]}}
+   :main-opts ["-m" "jolt.aspect-packs.glimmer.conformance-runner"]}
+  :http-server-conformance
+  {:extra-paths ["conformance" "models"]
+   :extra-deps
+   {io.github.chucklehead-dev/jolt-otel-instrumentation-http-server
+    {:git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-http-server.git"
+     :git/sha "6d7837c14dbf9710e833933ef61e6314d12b54ad"}
+    io.github.chucklehead-dev/jolt-hegel
+    {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
+     :git/sha "a4bd170ba9a7242739e694d872fe65c611e3df6f"}}
+   :main-opts ["-m" "jolt.aspect-packs.http-server.conformance-runner"]}}
  :tasks
  {test "jolt -M:test"
   glitter-conformance "jolt -M:glitter-conformance"
-  glimmer-conformance "jolt -M:glimmer-conformance"}}
+  glimmer-conformance "jolt -M:glimmer-conformance"
+  http-server-conformance "jolt -M:http-server-conformance"}}
