@@ -9,7 +9,7 @@
    :glimmer/privacy-safe-root-shape
    (fn [events]
      (every? (fn [event]
-               (or (not= :enter (:phase event))
+               (or (not= :invoke (:phase event))
                    (and (= #{:root-kind} (set (keys (:input event))))
                         (contains? allowed-root-kinds
                                    (get-in event [:input :root-kind])))))
@@ -19,6 +19,7 @@
   [(trace/contiguous-sequence :glimmer/contiguous-history 1)
    (trace/closed-lifecycles :glimmer/closed-mount-lifecycles)
    (trace/synchronous-parentage :glimmer/synchronous-parentage)
+   (trace/context-coherence :glimmer/context-coherence)
    privacy-safe-root-shape])
 
 (defn check!

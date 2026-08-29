@@ -5,7 +5,9 @@
             [jolt.aspect-packs.glitter.provider :as provider]
             [jolt.aspect-packs.history :as history]))
 
-(def join-point {:id :glitter.widget/list-box-child-reorder})
+(def join-point {:id :glitter.widget/list-box-child-reorder
+                 :site-id "glitter-test-site"
+                 :build-identity "aspect-packs-test-build"})
 
 (defn- run-advice
   [journal args proceed]
@@ -21,7 +23,7 @@
           enter (first events)
           child-id (get-in enter [:input :child-id])
           sibling-id (get-in enter [:input :sibling-id])]
-      (is (= [:enter :return] (mapv :phase events)))
+      (is (= [:invoke :return] (mapv :phase events)))
       (is (string? child-id))
       (is (string? sibling-id))
       (is (not= child-id sibling-id))
@@ -35,7 +37,7 @@
     (run-advice journal [101 202 303] (constantly nil))
     (run-advice journal [101 202 404] (constantly nil))
     (let [[first-enter second-enter]
-          (filterv #(= :enter (:phase %)) (history/events journal))]
+          (filterv #(= :invoke (:phase %)) (history/events journal))]
       (is (= (get-in first-enter [:input :child-id])
              (get-in second-enter [:input :child-id])))
       (is (not= (get-in first-enter [:input :sibling-id])
@@ -53,7 +55,7 @@
                      (catch Throwable error error))
           events (history/events journal)]
       (is (identical? expected observed))
-      (is (= [:enter :throw] (mapv :phase events)))
+      (is (= [:invoke :throw] (mapv :phase events)))
       (is (nil? (get-in events [0 :input :sibling-id])))
       (is (= events (model/check! events))))))
 

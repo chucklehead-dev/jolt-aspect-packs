@@ -5,7 +5,9 @@
             [jolt.aspect-packs.glimmer.provider :as provider]
             [jolt.aspect-packs.history :as history]))
 
-(def join-point {:id :glimmer.core/root-mount})
+(def join-point {:id :glimmer.core/root-mount
+                 :site-id "glimmer-test-site"
+                 :build-identity "aspect-packs-test-build"})
 
 (defn- run-advice
   [journal args proceed]
@@ -31,7 +33,7 @@
                                     [private-container :private-container root]
                                     #(identity result))))))
     (let [events (history/events journal)
-          enters (filterv #(= :enter (:phase %)) events)]
+          enters (filterv #(= :invoke (:phase %)) events)]
       (is (= expected-kinds (mapv #(get-in % [:input :root-kind]) enters)))
       (is (every? #(= #{:root-kind} (set (keys (:input %)))) enters))
       (is (not-any? #(or (= private-container %)
@@ -51,7 +53,7 @@
                    (catch Throwable error error))
         events (history/events journal)]
     (is (identical? expected observed))
-    (is (= [:enter :throw] (mapv :phase events)))
+    (is (= [:invoke :throw] (mapv :phase events)))
     (is (= {:root-kind :native-element} (:input (first events))))
     (is (= events (model/check! events)))))
 

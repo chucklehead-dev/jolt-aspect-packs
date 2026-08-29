@@ -5,7 +5,9 @@
             [jolt.aspect-packs.http-client.model :as model]
             [jolt.aspect-packs.http-client.provider :as provider]))
 
-(def join-point {:id :http-client.core/request})
+(def join-point {:id :http-client.core/request
+                 :site-id "http-client-test-site"
+                 :build-identity "aspect-packs-test-build"})
 
 (defn- run-advice
   [journal request proceed]
@@ -26,13 +28,17 @@
     (is (= [{:seq 1
              :operation-id 0
              :parent-operation-id nil
-             :phase :enter
-             :op :http-client.core/request
+             :context-id nil
+             :causal-links []
+             :phase :invoke
+             :operation :http-client.core/request
+             :site-id "http-client-test-site"
+             :build-identity "aspect-packs-test-build"
              :input {:request-method :post :scheme :https :uri "/work"}}
             {:seq 2
              :operation-id 0
              :phase :return
-             :output :returned}]
+             :value :returned}]
            (history/events journal)))
     (is (= (history/events journal)
            (model/check! (history/events journal))))))
@@ -45,7 +51,7 @@
                    nil
                    (catch Throwable error error))]
     (is (identical? expected observed))
-    (is (= [:enter :throw] (mapv :phase (history/events journal))))
+    (is (= [:invoke :throw] (mapv :phase (history/events journal))))
     (is (= (history/events journal)
            (model/check! (history/events journal))))))
 
@@ -78,7 +84,7 @@
           grouped (group-by :operation-id events)]
       (is (= (range 1 65) (map :seq events)))
       (is (= 32 (count grouped)))
-      (is (every? #(= #{:enter :return} (set (map :phase %)))
+      (is (every? #(= #{:invoke :return} (set (map :phase %)))
                   (vals grouped)))
       (is (= events (model/check! events))))))
 

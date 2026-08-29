@@ -27,8 +27,16 @@ test/jolt/aspect_packs/<library>/report_test.clj
 scenarios/<library>/
 ```
 
-`jolt.aspect-packs.history` contains only target-neutral journal mechanics;
-library model namespaces compose the shared `hegel.trace` rules.
+`jolt.aspect-packs.history` contains only target-neutral journal mechanics. It
+emits the canonical `:invoke`/`:return`/`:throw` ABI consumed directly by
+`hegel.history`, supports synchronous advice through `invoke!`, and exposes
+opaque exactly-once handles plus explicit causal carriers for callback, thread,
+and fiber completion. Strict closes catch lifecycle bugs; `try-return!` and
+`try-throw!` let timeout/cancel/callback races select one winner without throwing
+from losing event-loop callbacks. Pack-owned terminal shapers can retain bounded
+HTTP status, DB row-count, FFI outcome, or graph-edge information without
+changing application result or Throwable identity. Library model namespaces
+compose the shared `hegel.trace` and `hegel.history` rules.
 Library-specific redaction, semantic roles, advice, tests, and model rules stay
 under that library's namespace.
 
