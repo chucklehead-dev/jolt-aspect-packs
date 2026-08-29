@@ -1,0 +1,12 @@
+{:paths ["src"]
+ :deps
+ {io.github.casselc/samizdat
+  {:git/url "https://github.com/casselc/samizdat.git"
+   :git/sha "ff9cfd8cf6bf08c0f61b71cc98eee8c354efa861"}
+  io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/build
+ {:aspects
+  [{:resource "META-INF/jolt/aspects/packs/mycelium-dd13b4b.edn"
+    :provider jolt.aspect-packs.mycelium.provider/aspect-provider}]
+  :aspect-report "target/aspects.edn"}}

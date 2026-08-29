@@ -23,6 +23,20 @@
     {:id io.github.chucklehead-dev/jolt-duckdb
      :git/sha "facd634492ff1d984871a0d37122ab527b7648aa"}]}
 
+  yogthos/samizdat
+  {:git/url "https://github.com/casselc/samizdat.git"
+   :git/sha "ff9cfd8cf6bf08c0f61b71cc98eee8c354efa861"
+   :compiler {:id jolt-lang/jolt
+              :git/sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
+              :chez "10.4.1"}
+   :seam-revision "dd13b4b933d3db80a319d2c7b27af4ee6767fca5"
+   :manifest "META-INF/jolt/aspects/packs/mycelium-dd13b4b.edn"
+   :scenario "scenarios/mycelium"
+   :plain-scenario "scenarios/mycelium-plain"
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.mycelium.provider/aspect-provider}]}
+
   jolt-lang/http-client
  {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"

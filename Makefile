@@ -1,7 +1,7 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
 
-.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
+.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
 
 test:
 	$(JOLT) -M:test
@@ -15,7 +15,7 @@ glimmer-source-test:
 http-server-source-test:
 	$(JOLT) -M:http-server-conformance
 
-aspect-smoke: db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke
+aspect-smoke: db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
 
 db-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -81,6 +81,26 @@ glimmer-aspect-smoke:
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.glimmer.report-test \
 	  scenarios/glimmer/target/aspects.edn
+
+mycelium-aspect-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/mycelium && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.mycelium \
+	    -o target/mycelium-aspect-scenario
+	@scenarios/mycelium/target/mycelium-aspect-scenario
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"]}' \
+	  -m jolt.aspect-packs.mycelium.report-test \
+	  scenarios/mycelium/target/aspects.edn
+
+mycelium-plain-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/mycelium-plain && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.mycelium \
+	    -o target/mycelium-plain-scenario
+	@scenarios/mycelium-plain/target/mycelium-plain-scenario plain
 
 db-source-test:
 	$(JOLT) -M:db-conformance

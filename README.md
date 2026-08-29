@@ -76,6 +76,14 @@ selects the existing OTel provider and the history provider in a stable order
 without adding OTel dependencies to the database or adapter libraries. See
 [the database pack notes](docs/database.md).
 
+The Mycelium pack targets Samizdat's provider-neutral workflow and selected-edge
+semantic events at compatibility revision
+`dd13b4b933d3db80a319d2c7b27af4ee6767fca5`. It correlates bounded normalized
+graphs, exactly-once lifecycle terminals, graph-valid edge selections, caller
+history context, and exact edge-to-edge causal progression without retaining
+workflow data, predicates, resources, or errors. See
+[the Mycelium pack notes](docs/mycelium.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh
