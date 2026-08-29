@@ -101,3 +101,21 @@ delivery. They do not reorder native scheduler decisions, defer `proceed`
 beyond its dynamic extent, invoke it on another thread or fiber, or claim to
 alter the target's internal callback delivery. Those require a separate native
 decision seam or a provider-neutral asynchronous continuation/context contract.
+
+The first generated perturbation suite composes the fault provider outside the
+history provider around two competing fixed-buffer operations. Separate
+generated properties require pre-target, post-target, and argument-replacement
+fault families; one actor is always faulted and the other remains an ordinary
+target call. The same pure EDN scenario runs on both a thread and a fiber
+backend. A separate application ledger checks
+whether the target ran and whether the outer return or identical Throwable was
+observed, while the ordinary fixed-buffer model checks only the target calls
+that reached the inner history provider. This distinction is intentional:
+pre-target faults must not invent operations, and post-target faults must not
+rewrite the target history merely because they change the caller's outcome.
+
+The generated slice does not yet include callback suppression, duplication, or
+deferred delivery, native scheduling decisions, or `alts!`. A mutation control
+deliberately reverses provider order and demonstrates that a skipped target can
+then be recorded as an impossible channel result, keeping the ordering rule
+non-vacuous.

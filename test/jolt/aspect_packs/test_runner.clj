@@ -3,6 +3,7 @@
             [jolt.aspect-packs.compatibility-test]
             [jolt.aspect-packs.core-async.faults-test]
             [jolt.aspect-packs.core-async.model-test]
+            [jolt.aspect-packs.core-async.perturbation-test]
             [jolt.aspect-packs.core-async.provider-test]
             [jolt.aspect-packs.db.provider-test]
             [jolt.aspect-packs.glimmer.provider-test]
@@ -17,6 +18,7 @@
                 'jolt.aspect-packs.compatibility-test
                 'jolt.aspect-packs.core-async.faults-test
                 'jolt.aspect-packs.core-async.model-test
+                'jolt.aspect-packs.core-async.perturbation-test
                 'jolt.aspect-packs.core-async.provider-test
                 'jolt.aspect-packs.db.provider-test
                 'jolt.aspect-packs.glimmer.provider-test
