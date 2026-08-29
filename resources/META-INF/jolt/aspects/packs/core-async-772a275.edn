@@ -1,0 +1,22 @@
+{:schema 1
+ :library {:id jolt-lang/jolt
+           :version "772a27584d0bd151c421c90e80cb8c77012ab836"}
+ :aspects
+ [{:id :core-async/offer
+   :match {:ns jolt.aspect-packs.scenario.core-async
+           :call clojure.core.async/offer!
+           :arity 2}
+   :advice-role :concurrency/channel-operation
+   :expect {:matches 1}}
+  {:id :core-async/poll
+   :match {:ns jolt.aspect-packs.scenario.core-async
+           :call clojure.core.async/poll!
+           :arity 1}
+   :advice-role :concurrency/channel-operation
+   :expect {:matches 1}}
+  {:id :core-async/close
+   :match {:ns jolt.aspect-packs.scenario.core-async
+           :call clojure.core.async/close!
+           :arity 1}
+   :advice-role :concurrency/channel-operation
+   :expect {:matches 1}}]}

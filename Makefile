@@ -1,7 +1,7 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
 
-.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
 
 test:
 	$(JOLT) -M:test
@@ -15,7 +15,27 @@ glimmer-source-test:
 http-server-source-test:
 	$(JOLT) -M:http-server-conformance
 
-aspect-smoke: db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+aspect-smoke: core-async-aspect-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+
+core-async-aspect-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/core-async && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.core-async \
+	    -o target/core-async-aspect-scenario
+	@scenarios/core-async/target/core-async-aspect-scenario
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"]}' \
+	  -m jolt.aspect-packs.core-async.report-test \
+	  scenarios/core-async/target/aspects.edn
+
+core-async-plain-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/core-async-plain && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.core-async \
+	    -o target/core-async-plain-scenario
+	@scenarios/core-async-plain/target/core-async-plain-scenario plain
 
 db-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \

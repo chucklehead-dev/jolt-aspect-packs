@@ -84,6 +84,15 @@ history context, and exact edge-to-edge causal progression without retaining
 workflow data, predicates, resources, or errors. See
 [the Mycelium pack notes](docs/mycelium.md).
 
+The core.async pack is the first runtime-concurrency experiment. It externally
+wraps fixed-buffer `offer!`, `poll!`, and `close!` call sites, records opaque
+canonical histories, and checks them against a bounded FIFO/close
+linearizability model under both OS-thread and fiber contention. The same
+scenario is also compiled without the pack. This intentionally excludes
+callback operations, `alts!`, and CPS-lowered `go` parks until their distinct
+observation contracts are modeled. See
+[the core.async pack notes](docs/core-async.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh

@@ -1,6 +1,21 @@
 {:schema 1
  :targets
- {jolt-lang/db
+ {jolt-lang/jolt
+  {:git/url "https://github.com/casselc/jolt.git"
+   :git/sha "772a27584d0bd151c421c90e80cb8c77012ab836"
+   :compiler {:id jolt-lang/jolt
+              :git/sha "772a27584d0bd151c421c90e80cb8c77012ab836"
+              :chez "10.4.1"}
+   :manifest "META-INF/jolt/aspects/packs/core-async-772a275.edn"
+   :scenario "scenarios/core-async"
+   :plain-scenario "scenarios/core-async-plain"
+   :surface :clojure.core.async
+   :coverage #{:offer! :poll! :close!}
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.core-async.provider/aspect-provider}]}
+
+  jolt-lang/db
   {:git/url "https://github.com/casselc/db.git"
    :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"
    :compiler {:id jolt-lang/jolt
