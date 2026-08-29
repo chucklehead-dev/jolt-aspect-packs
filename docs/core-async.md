@@ -79,3 +79,25 @@ This is not yet a claim about every core.async operation. In particular:
 Those are follow-on experiments. A failing public history is fixed at the
 runtime ownership layer first; only a recurring claim/publish/wake pattern is a
 candidate for a new shared concurrency primitive.
+
+## Test-only public-call faults
+
+`jolt.aspect-packs.core-async.faults` is a separate `:control-v1` provider. It
+is inert unless a test binds one explicit action, and the compiler refuses to
+select it unless the build sets `:allow-control-aspects true`. In a combined
+build the fault provider must be the outer consumer and the history provider
+the inner consumer. Substituted arguments then reach history before the target,
+while calls skipped by a pre-target fault do not masquerade as target history.
+
+The bounded actions cover pre-target return/throw, post-target return/throw,
+exact-arity argument replacement, owner-context barriers, and application
+callback suppression, duplication, or deferred release. Deferred callbacks
+capture an exactly-once thunk and return immediately; they never block a
+core.async dispatch callback thread. Fault decisions contain only operation,
+effect, and phase metadata.
+
+These controls perturb public call arrival and application-visible callback
+delivery. They do not reorder native scheduler decisions, defer `proceed`
+beyond its dynamic extent, invoke it on another thread or fiber, or claim to
+alter the target's internal callback delivery. Those require a separate native
+decision seam or a provider-neutral asynchronous continuation/context contract.
