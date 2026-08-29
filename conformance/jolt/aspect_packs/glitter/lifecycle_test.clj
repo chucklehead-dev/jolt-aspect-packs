@@ -11,7 +11,10 @@
 (def sibling 303)
 (def child-wrapper 404)
 (def sibling-wrapper 505)
-(def join-point {:id :glitter.widget/list-box-child-reorder})
+(def join-point
+  {:id :glitter.widget/list-box-child-reorder
+   :site-id "glitter-reorder-conformance-site"
+   :build-identity "glitter-reorder-conformance-build"})
 
 (defn- event-count [events event]
   (count (filter #(= event %) events)))
@@ -72,7 +75,6 @@
         (is (= 1 (event-count native-events :unref)))
         (is (= :unref (last native-events)))
         (is (not (widget/suppressing? parent)))
-        (is (= (if failure [:enter :throw] [:enter :return])
+        (is (= (if failure [:invoke :throw] [:invoke :return])
                (mapv :phase trace-events)))
         (is (= trace-events (model/check! trace-events)))))))
-

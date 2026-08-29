@@ -6,7 +6,10 @@
             [jolt.aspect-packs.glimmer.provider :as provider]
             [jolt.aspect-packs.history :as history]))
 
-(def join-point {:id :glimmer.core/root-mount})
+(def join-point
+  {:id :glimmer.core/root-mount
+   :site-id "glimmer-mount-conformance-site"
+   :build-identity "glimmer-mount-conformance-build"})
 
 (defn- widget [tag props]
   (atom {:tag tag :props props :children []}))
@@ -56,11 +59,11 @@
         (if failure
           (do
             (is (= failure (:step (ex-data thrown))))
-            (is (= [:enter :throw] (mapv :phase events))))
+            (is (= [:invoke :throw] (mapv :phase events))))
           (do
             (is (nil? thrown))
             (is (= [:vbox] (mapv #(-> % deref :tag) (:children @container))))
-            (is (= [:enter :return] (mapv :phase events)))))
+            (is (= [:invoke :return] (mapv :phase events)))))
         (is (= {:root-kind :native-element} (:input (first events))))
         (is (not-any? #{"private" :root}
                       (tree-seq coll? seq events)))
