@@ -37,6 +37,22 @@
   (reify CapabilityAccess
     (-capability-data [_] data)))
 
+(defn- operation-id-key [operation-id]
+  ;; Journal operation ids are integers. Match hegel.trace's tagged portable
+  ;; scalar order so producer normalization and the independent oracle agree.
+  (str "0:" operation-id))
+
+(defn- validate-causal-links-shape! [links]
+  (when-not (and (vector? links)
+                 (every? #(and (integer? %) (<= 0 %)) links)
+                 (= (count links) (count (distinct links)))
+                 (= (mapv operation-id-key links)
+                    (vec (sort (map operation-id-key links)))))
+    (throw (ex-info "history causal links must be canonical local operation ids"
+                    {:kind :history/invalid-causal-links
+                     :link-count (if (vector? links) (count links) nil)})))
+  links)
+
 (defn journal
   "Create an opaque, thread-safe semantic history journal."
   []
@@ -113,10 +129,17 @@
                      (:parent-operation-id opts) *parent-operation-id*)
          context-id (if (contains? opts :context-id)
                       (:context-id opts) *context-id*)
-         causal-links (vec (or (:causal-links opts) []))
+         causal-links (validate-causal-links-shape!
+                       (if (contains? opts :causal-links)
+                         (:causal-links opts)
+                         []))
          state (journal-call
                  journal :swap
                  (fn [{:keys [next-seq next-operation-id] :as state}]
+                   (when-not (every? #(< % next-operation-id) causal-links)
+                     (throw (ex-info "history causal link does not name an earlier operation"
+                                     {:kind :history/dangling-causal-link
+                                      :link-count (count causal-links)})))
                    (let [event {:seq next-seq
                                 :operation-id next-operation-id
                                 :parent-operation-id parent-id
@@ -138,6 +161,28 @@
 
 (defn operation-id [handle]
   (:operation-id (capability-data handle :handle)))
+
+(defn causal-links
+  "Build canonical fan-in links from handles owned by journal.
+
+  Duplicate handles collapse to one link. Foreign handles fail closed before a
+  new operation is emitted. The returned vector is suitable for `begin!`'s
+  `:causal-links` option."
+  [journal handles]
+  (when-not (vector? handles)
+    (throw (ex-info "history causal-link handles must be a vector"
+                    {:kind :history/invalid-causal-link-handles})))
+  (->> handles
+       (map (fn [handle]
+              (let [{owner :journal id :operation-id}
+                    (capability-data handle :handle)]
+                (when-not (identical? journal owner)
+                  (throw (ex-info "history causal-link handle uses a different journal"
+                                  {:kind :history/journal-mismatch})))
+                id)))
+       distinct
+       (sort-by operation-id-key)
+       vec))
 
 (defn carrier
   "Capture an opaque causal carrier for child callbacks, threads, or fibers."
@@ -214,9 +259,21 @@
   ([journal join-point input proceed]
    (invoke! journal join-point input {} proceed))
   ([journal join-point input opts proceed]
+   (when-not (map? opts)
+     (throw (ex-info "history invoke options must be a map"
+                     {:kind :history/invalid-options})))
+   (let [allowed #{:return-fn :throw-fn :parent-operation-id :context-id
+                   :causal-links}
+         unknown (seq (remove allowed (keys opts)))]
+     (when unknown
+       (throw (ex-info "unsupported history invoke option"
+                       {:kind :history/invalid-options
+                        :unknown-keys (vec unknown)}))))
    (let [return-fn (or (:return-fn opts) (constantly :returned))
          throw-fn (or (:throw-fn opts) (constantly :thrown))
-         handle (begin! journal join-point input)
+         begin-opts (select-keys opts
+                                 [:parent-operation-id :context-id :causal-links])
+         handle (begin! journal join-point input begin-opts)
          outcome (try
                    {:phase :return
                     :value (call-with-carrier (carrier handle) proceed)}
