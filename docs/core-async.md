@@ -119,3 +119,33 @@ deferred delivery, native scheduling decisions, or `alts!`. A mutation control
 deliberately reverses provider order and demonstrates that a skipped target can
 then be recorded as an impossible channel result, keeping the ordering rule
 non-vacuous.
+
+## Public close and completion invariants
+
+The next generated public-call slice checks two ownership boundaries on both OS
+threads and fibers, with unbuffered and capacity-one channels. Once the callback
+`put!` or `take!` target has registered and returned, ownership is already
+durable even while outer advice holds the public call: close completes the take
+as closed, while an admitted put retains its FIFO position until a later take
+consumes it. The put callback must still be unrealized immediately after close
+and before any drain. The callback history model validates
+the resulting target-child provenance and a separate application ledger checks
+that no value or callback ownership was dropped.
+
+The registration schedule composes the test-only fault provider outside the
+history provider. A bounded post-target barrier holds the public call after its
+target child has returned while a coordinator closes the channel, then releases
+the caller. The history explicitly requires the target-child terminal to precede
+the close invocation, so this is evidence of registered ownership rather than a
+race inferred from callback timing.
+
+For capacity-one transformed channels, one pending input is registered before
+close. Draining the channel must step every admitted input in FIFO order before
+the reducing function's completion arity runs exactly once. These properties
+use only public channel calls and need no native scheduler seam. Synthetic
+ledger/oracle controls remove or duplicate a callback, change the drained value,
+move completion ahead of a pending step, and duplicate completion to prove the
+oracles reject each forbidden outcome; they are not injected runtime mutants.
+The transformed property excludes capacity zero because Jolt steps and enqueues
+that put during registration, so the pending transformed-input schedule is not
+reachable there.
