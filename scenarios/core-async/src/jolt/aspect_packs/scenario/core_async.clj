@@ -15,6 +15,12 @@
 (defn observed-close [channel]
   (async/close! channel))
 
+(defn observed-put [channel value callback on-caller?]
+  (async/put! channel value callback on-caller?))
+
+(defn observed-take [channel callback on-caller?]
+  (async/take! channel callback on-caller?))
+
 (defn- run-action! [channel backend [operation value]]
   (case backend
     :thread (Thread/yield)
@@ -72,10 +78,148 @@
                             {:backend backend :events events})))))
       events)))
 
+(defn- await! [completion]
+  (let [value (deref completion 5000 ::timed-out)]
+    (when (= ::timed-out value)
+      (throw (ex-info "core.async scenario callback did not complete" {})))
+    value))
+
+(defn- run-callbacks! [backend plain?]
+  (let [journal (history/journal)
+        run
+        (fn []
+          (binding [history/*journal* journal
+                    history/*context-id*
+                    (keyword "core-async-callback-scenario" (name backend))]
+            (let [channel (async/chan 1)
+                  caller (Thread/currentThread)
+                  callback-count (atom 0)
+                  callback
+                  (fn [completion expected-value expected-caller?
+                       expected-parent]
+                    (fn [value]
+                      (swap! callback-count inc)
+                      (deliver completion
+                               {:value value
+                                :expected-value expected-value
+                                :caller? (identical? caller
+                                                     (Thread/currentThread))
+                                :expected-caller? expected-caller?
+                                :expected-parent expected-parent
+                                :parent history/*parent-operation-id*
+                                :context history/*context-id*})))
+                  immediate-put (promise)
+                  immediate-take (promise)
+                  pending-take (promise)
+                  pending-put (promise)]
+              (when-not (true? (observed-put
+                                channel :immediate-put
+                                (callback immediate-put true true 0) true))
+                (throw (ex-info "immediate put! returned the wrong result" {})))
+              (await! immediate-put)
+              (when-not (nil? (observed-take
+                               channel
+                               (callback immediate-take :immediate-put false 1)
+                               false))
+                (throw (ex-info "immediate take! returned the wrong result" {})))
+              (await! immediate-take)
+              (when-not (nil? (observed-take
+                               channel
+                               (callback pending-take :pending-take nil 2)
+                               true))
+                (throw (ex-info "pending take! returned the wrong result" {})))
+              (async/>!! channel :pending-take)
+              (await! pending-take)
+              (async/>!! channel :occupied)
+              (when-not (true? (observed-put
+                                channel :pending-put
+                                (callback pending-put true false 3) false))
+                (throw (ex-info "pending put! returned the wrong result" {})))
+              (when-not (= :occupied (async/<!! channel))
+                (throw (ex-info "pending put! setup lost its buffered value" {})))
+              (await! pending-put)
+              (doseq [completion [immediate-put immediate-take
+                                  pending-take pending-put]]
+                (let [{:keys [value expected-value caller? expected-caller?
+                              parent expected-parent context]
+                       :as observation}
+                      (await! completion)]
+                  (when-not (and (= expected-value value)
+                                 (or (nil? expected-caller?)
+                                     (= expected-caller? caller?))
+                                 (or plain?
+                                     (and (= expected-parent parent)
+                                          (= (keyword
+                                              "core-async-callback-scenario"
+                                              (name backend))
+                                             context))))
+                    (throw (ex-info "callback placement or value drifted"
+                                    {:backend backend
+                                     :observation observation})))))
+              (when-not (= 4 @callback-count)
+                (throw (ex-info "core.async scenario lost or duplicated callbacks"
+                                {:backend backend :count @callback-count})))
+              (when-not (= :pending-put (async/<!! channel))
+                (throw (ex-info "pending put! did not publish its value" {})))
+              ;; Nil is an explicit no-op callback in the pinned Jolt target.
+              ;; Woven and plain builds must preserve that API while the woven
+              ;; recorder still closes both lifecycles internally.
+              (when-not (true? (observed-put
+                                channel :nil-callback-put nil true))
+                (throw (ex-info "nil-callback put! drifted" {})))
+              (when-not (nil? (observed-take channel nil true))
+                (throw (ex-info "nil-callback take! drifted" {})))
+              :done)))
+        worker (case backend
+                 :thread (future (run))
+                 :fiber (fibers/spawn run))]
+    (when-not (= :done
+                 (case backend
+                   :thread (deref worker 5000 ::timed-out)
+                   :fiber (fibers/join worker 5000 ::timed-out)))
+      (throw (ex-info "core.async callback scenario worker did not complete"
+                      {:backend backend})))
+    (let [events (history/events journal)]
+      (if plain?
+        (when (seq events)
+          (throw (ex-info "plain callback build ran aspect advice"
+                          {:backend backend :events events})))
+        (do
+          (history/assert-complete! journal)
+          (when-not (= #{:core-async/put :core-async/take}
+                       (set (map :operation
+                                 (filter #(= :invoke (:phase %)) events))))
+            (throw (ex-info "woven callback history missed an operation"
+                            {:backend backend :events events})))
+          (when-not (= 12 (count events))
+            (throw (ex-info "woven callback history has wrong lifecycle count"
+                            {:backend backend :events events})))
+          (let [rendered (pr-str events)]
+            (when (some #(.contains rendered %)
+                        [":immediate-put" ":pending-take"
+                         ":occupied" ":pending-put"
+                         ":nil-callback-put"])
+              (throw (ex-info "woven callback history retained source values"
+                              {:backend backend :events events}))))
+          (doseq [[invoke terminal]
+                  (partition 2 events)]
+            (when-not (and (= (:operation-id invoke)
+                              (:operation-id terminal))
+                           (= :invoke (:phase invoke))
+                           (= :return (:phase terminal))
+                           (= {:parent-operation-id (:operation-id invoke)
+                               :context-id (:context-id invoke)}
+                              (get-in terminal [:value :carrier])))
+              (throw (ex-info "callback lifecycle was not exactly once"
+                              {:backend backend
+                               :invoke invoke :terminal terminal}))))))
+      events)))
+
 (defn -main [& args]
   (let [plain? (= ["plain"] (vec args))]
     (doseq [backend [:thread :fiber]]
-      (run-backend! backend plain?))
+      (run-backend! backend plain?)
+      (run-callbacks! backend plain?))
     (println (if plain?
-               "CORE-ASYNC plain scenario remained uninstrumented"
-               "CORE-ASYNC thread/fiber history scenario ran"))))
+               "CORE-ASYNC plain callback scenario remained uninstrumented"
+               "CORE-ASYNC thread/fiber operation and callback histories ran"))))
