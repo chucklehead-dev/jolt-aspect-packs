@@ -33,7 +33,7 @@
         events (history/events journal)]
     (when-not (= :native (:type @mounted))
       (throw (ex-info "headless Glimmer scenario did not mount" {})))
-    (when-not (= [:enter :return] (mapv :phase events))
+    (when-not (= [:invoke :return] (mapv :phase events))
       (throw (ex-info "woven Glimmer advice did not close its history"
                       {:events events})))
     (when-not (= {:root-kind :native-element} (:input (first events)))
