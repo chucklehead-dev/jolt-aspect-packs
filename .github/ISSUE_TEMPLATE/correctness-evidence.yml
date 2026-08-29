@@ -1,0 +1,74 @@
+name: Correctness evidence
+description: Track a reproducible ecosystem correctness defect from observation through upstream disposition.
+title: "[library/subsystem] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open one issue per independently actionable root cause. Do not combine unrelated symptoms merely because one commit happens to fix them.
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Evidence status
+      options:
+        - Observed
+        - Modeled
+        - Fixed on fork
+        - Upstream candidate
+        - Upstreamed
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owning repository and exact revision
+      description: Repository plus the full affected commit SHA or released version.
+      placeholder: owner/repo@0123456789abcdef...
+    validations:
+      required: true
+
+  - type: textarea
+    id: defect
+    attributes:
+      label: Observable defect
+      description: State the violated safety, liveness, compatibility, or resource-ownership contract and its user-visible failure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Reproducer and evidence
+      description: Include the smallest executable reproducer, property seed, history, trace, native observer, or bounded proof witness. Record timeouts as failures, not assumptions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: controls
+    attributes:
+      label: Non-vacuity and mutation controls
+      description: Explain the known-bad mutation the oracle detects and the valid boundary it still accepts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: Fix commits
+      description: List exact commits. Addressing commits should include `Refs` or `Fixes chucklehead-dev/jolt-aspect-packs#N`.
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation and review
+      description: Record exact commands, totals, platforms, and independent review outcome.
+
+  - type: textarea
+    id: gaps
+    attributes:
+      label: Remaining gaps and upstream disposition
+      description: State what is still unproved, the intended upstream repository, and whether upstream work is authorized.
+    validations:
+      required: true
