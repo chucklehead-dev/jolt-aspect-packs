@@ -1,0 +1,9 @@
+#!/bin/sh
+case "$*" in
+  *atomic_reference_cas_identity.clj*) id=issue-23 ;;
+  *files_exclusive_create.clj*) id=issue-31 ;;
+  *files_create_directories_existing_file.clj*) id=issue-32 ;;
+  *atomic_numeric_width.clj*) id=issue-36 ;;
+  *) echo "unknown regression case" >&2; exit 2 ;;
+esac
+echo "REGRESSION PASS $id"

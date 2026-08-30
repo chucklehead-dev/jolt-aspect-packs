@@ -1,10 +1,41 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
 
-.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test
 
 test:
 	$(JOLT) -M:test
+
+jolt-regression-matrix:
+	@test -n "$(JOLT_UNFIXED)" || \
+	  (echo "JOLT_UNFIXED must be an absolute path to an upstream/unfixed jolt" >&2; exit 2)
+	@test -n "$(JOLT_FIXED)" || \
+	  (echo "JOLT_FIXED must be an absolute path to a fixed jolt" >&2; exit 2)
+	@JOLT_UNFIXED="$(JOLT_UNFIXED)" JOLT_FIXED="$(JOLT_FIXED)" \
+	  bb regressions/jolt/run.bb
+
+jolt-regression-matrix-self-test:
+	@chmod +x test/fixtures/regression-matrix/fixed-jolt \
+	  test/fixtures/regression-matrix/unfixed-jolt \
+	  test/fixtures/regression-matrix/upstream-fixed-jolt \
+	  test/fixtures/regression-matrix/malformed-jolt
+	@report=$$(mktemp); \
+	  trap 'rm -f "$$report"' EXIT; \
+	  JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/unfixed-jolt" \
+	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/fixed-jolt" \
+	    bb regressions/jolt/run.bb >"$$report"; \
+	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 4 :fail 4 :xpass 0 :error 0} (:summary r))))' "$$report"
+	@report=$$(mktemp); \
+	  trap 'rm -f "$$report"' EXIT; \
+	  JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/upstream-fixed-jolt" \
+	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/fixed-jolt" \
+	    bb regressions/jolt/run.bb >"$$report"; \
+	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 4 :fail 0 :xpass 4 :error 0} (:summary r))))' "$$report"
+	@if JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/unfixed-jolt" \
+	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/malformed-jolt" \
+	  bb regressions/jolt/run.bb >/dev/null; then \
+	    echo "malformed fixed binary unexpectedly passed" >&2; exit 1; \
+	  fi
 
 glitter-source-test:
 	$(JOLT) -M:glitter-conformance

@@ -101,6 +101,18 @@ Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
   jolt -M:test
 ```
 
+Run portable public-API regressions against explicit upstream and consolidated
+fixed binaries without switching branches:
+
+```sh
+JOLT_UNFIXED=/absolute/path/to/upstream-jolt \
+JOLT_FIXED=/absolute/path/to/fixed-jolt \
+make jolt-regression-matrix
+```
+
+The EDN result distinguishes the expected historical `:fail`, fixed `:pass`,
+and upstream `:xpass`. See [the portable matrix contract](docs/jolt-regression-matrix.md).
+
 Run the compiled scenario with the current aspect-capable compiler checkout:
 
 ```sh
