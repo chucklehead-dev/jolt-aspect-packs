@@ -62,4 +62,20 @@
     :hegel {:runtime-required? false
             :status :minimized-from-differential-property}
     :checker {:source :jvm-oracle-comparison
+              :status :independently-runnable}}}
+
+  {:id :jolt/future-host-contract
+   :script "regressions/jolt/cases/future_host_contract.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/46"
+   :bad-sha "33a1bfc44010c0a3dd61ba6dce8e67303ffe0cff"
+   :fixed-sha "442ce2a131ca522a7cac8ca61f68f02de464812c"
+   :timeout-ms 15000
+   :expected {:pass "REGRESSION PASS issue-46"
+              :fail "REGRESSION FAIL issue-46"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-public-api-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-jvm-differential-witness}
+    :checker {:source :future-host-jvm-oracle
               :status :independently-runnable}}}]}

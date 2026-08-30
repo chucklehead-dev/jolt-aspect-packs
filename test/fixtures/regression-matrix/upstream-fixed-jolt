@@ -4,6 +4,7 @@ case "$*" in
   *files_exclusive_create.clj*) id=issue-31 ;;
   *files_create_directories_existing_file.clj*) id=issue-32 ;;
   *atomic_numeric_width.clj*) id=issue-36 ;;
+  *future_host_contract.clj*) id=issue-46 ;;
   *) echo "unknown regression case" >&2; exit 2 ;;
 esac
 echo "REGRESSION PASS $id"
