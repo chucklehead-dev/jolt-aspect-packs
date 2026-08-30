@@ -1,0 +1,87 @@
+{:schema 1
+ :repository "chucklehead-dev/jolt-aspect-packs"
+ :label "status:fixed-in-fork"
+ :captured-at "2026-08-30T19:47:00Z"
+ :fork-fixed-issues
+ [18 22 23 25 26 30 31 32 33 34 35 36 41 43 44 45 49 50 51 52]
+ :known-missing
+ [{:issue 18
+   :reason "Extract the fiber-safe lazy realization witness."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/fibers-publication-test.ss"}}
+  {:issue 22
+   :reason "Add the public Atom value-CAS identity witness separately from AtomicReference."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/concurrency-history-test.clj"}}
+  {:issue 25
+   :reason "Extract the reentrant System property rendering witness."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/sysprops-test.clj"}}
+  {:issue 26
+   :reason "Package checker mutation controls as a portable tooling regression."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "host/chez/park-lock-check.ss"}}
+  {:issue 30
+   :reason "Extract concurrent dynamic-dependency temp-root isolation."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/unit.edn"}}
+  {:issue 33
+   :reason "Extract extension snapshot-prepare-recheck publication behavior."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/extensions-concurrency-test.ss"}}
+  {:issue 34
+   :reason "Extract reentrant tagged-method registration and rendering."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/tagged-method-registration-test.clj"}}
+  {:issue 35
+   :reason "Add the atomic delta-conversion public witness."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/atomic-numeric-test.ss"}}
+  {:issue 41
+   :reason "Package the cross-target managed-library build witness."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "host/chez/build-smoke.sh"}}
+  {:issue 43
+   :reason "Extract the shared logical-mutex Gambit boot regression."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "host/gambit/gambitcheck.ss"}}
+  {:issue 44
+   :reason "Add java.io.File temp creation and mkdirs public witnesses."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/java-io-create-test.ss"}}
+  {:issue 45
+   :reason "Package lazy provider-resolution standalone-build behavior."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/aspect-build-smoke.sh"}}
+  {:issue 49
+   :reason "Package visible synchronous callback provenance mutation controls."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "host/chez/park-lock-check.ss"}}
+  {:issue 50
+   :reason "Extract the sibling-fiber owner-identity control for both backends."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "host/gambit/gambitcheck.ss"}}
+  {:issue 51
+   :reason "Extract deterministic process ambient-error clobber behavior without aspects."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/ffi-native-error-test.ss"}}
+  {:issue 52
+   :reason "Extract deterministic socket ambient-error classification without aspects."
+   :evidence {:repository "casselc/jolt"
+              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
+              :path "test/chez/socket-test.clj"}}]}

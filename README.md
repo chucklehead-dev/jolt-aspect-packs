@@ -109,6 +109,8 @@ fixed binaries without switching branches:
 JOLT_UNFIXED=/absolute/path/to/upstream-jolt \
 JOLT_FIXED=/absolute/path/to/fixed-jolt \
 make jolt-regression-matrix
+make jolt-regression-coverage
+make jolt-regression-coverage-live
 ```
 
 The EDN result distinguishes the expected historical `:fail`, fixed `:pass`,

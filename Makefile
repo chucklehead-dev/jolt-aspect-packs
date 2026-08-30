@@ -5,7 +5,7 @@ define assert-effect-report
 	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
 endef
 
-.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test
+.PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
 
 test:
 	$(JOLT) -M:test
@@ -40,6 +40,23 @@ jolt-regression-matrix-self-test:
 	  bb regressions/jolt/run.bb >/dev/null; then \
 	    echo "malformed fixed binary unexpectedly passed" >&2; exit 1; \
 	  fi
+
+jolt-regression-coverage:
+	@$(JOLT) -M -m jolt.aspect-packs.regression-coverage \
+	  regressions/jolt/cases.edn regressions/jolt/fork-fixed-coverage.edn
+
+jolt-regression-coverage-live:
+	@command -v gh >/dev/null || \
+	  (echo "gh is required for the live fork-fixed coverage check" >&2; exit 2)
+	@set -eu; \
+	  live=$$(mktemp); \
+	  trap 'rm -f "$$live"' EXIT; \
+	  gh issue list --repo chucklehead-dev/jolt-aspect-packs --state open \
+	    --label status:fixed-in-fork --limit 1001 --json number \
+	    --jq 'if length > 1000 then error("fixed-in-fork query exceeds 1000 issues") else map(.number) | sort end' \
+	    >"$$live"; \
+	  $(JOLT) -M -m jolt.aspect-packs.regression-coverage \
+	    regressions/jolt/cases.edn regressions/jolt/fork-fixed-coverage.edn "$$live"
 
 glitter-source-test:
 	$(JOLT) -M:glitter-conformance

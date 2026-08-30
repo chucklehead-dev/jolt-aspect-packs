@@ -55,3 +55,34 @@ Run the runner's controlled positive and fail-closed checks with:
 ```sh
 make jolt-regression-matrix-self-test
 ```
+
+## Fork-fixed coverage debt
+
+`regressions/jolt/fork-fixed-coverage.edn` is the checked snapshot of open
+issues labeled `status:fixed-in-fork`. Every issue must either have at least
+one independently runnable matrix case or one issue-tagged `:known-missing`
+row naming the in-tree evidence that still needs extraction. The offline gate
+rejects duplicate or unsorted issues, malformed debt, stale debt after a case
+is added, and debt removed before a case exists. A URL alone is never counted
+as coverage: a case needs an existing script, exact SHAs, a bounded timeout,
+distinct result signatures, and provenance declaring that aspects and Hegel
+are not needed at run time. Debt evidence is anchored by repository, exact
+commit SHA, and relative source path:
+
+```sh
+make jolt-regression-coverage
+```
+
+The live gate additionally compares the checked snapshot with GitHub. A newly
+labeled issue, a removed label, or any other remote drift fails until the
+snapshot and its portable evidence are reviewed together:
+
+```sh
+make jolt-regression-coverage-live
+```
+
+This is an explicit debt migration rather than a coverage claim: the initial
+snapshot has 20 fork-fixed issues, 4 with portable cases and 16 with named
+extraction debt. New debt is not silently accepted. Existing rows are burned
+down by adding positive/negative cases that run without aspects, Hegel, or the
+original checker.

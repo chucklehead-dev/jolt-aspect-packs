@@ -13,7 +13,8 @@
             [jolt.aspect-packs.history-test]
             [jolt.aspect-packs.http-server.provider-test]
             [jolt.aspect-packs.http-client.provider-test]
-            [jolt.aspect-packs.mycelium.provider-test]))
+            [jolt.aspect-packs.mycelium.provider-test]
+            [jolt.aspect-packs.regression-coverage-test]))
 
 (defn -main [& _]
   (let [result (test/run-tests
@@ -30,6 +31,7 @@
                 'jolt.aspect-packs.history-test
                 'jolt.aspect-packs.http-server.provider-test
                 'jolt.aspect-packs.http-client.provider-test
-                'jolt.aspect-packs.mycelium.provider-test)
+                'jolt.aspect-packs.mycelium.provider-test
+                'jolt.aspect-packs.regression-coverage-test)
         failures (+ (:fail result) (:error result))]
     (System/exit (if (zero? failures) 0 1))))
