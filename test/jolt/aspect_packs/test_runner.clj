@@ -1,5 +1,6 @@
 (ns jolt.aspect-packs.test-runner
   (:require [clojure.test :as test]
+            [jolt.aspect-packs.checkpoint-history-test]
             [jolt.aspect-packs.compatibility-test]
             [jolt.aspect-packs.core-async.faults-test]
             [jolt.aspect-packs.core-async.model-test]
@@ -18,6 +19,7 @@
 
 (defn -main [& _]
   (let [result (test/run-tests
+                'jolt.aspect-packs.checkpoint-history-test
                 'jolt.aspect-packs.compatibility-test
                 'jolt.aspect-packs.core-async.faults-test
                 'jolt.aspect-packs.core-async.model-test

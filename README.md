@@ -116,6 +116,10 @@ make jolt-regression-coverage-live
 The EDN result distinguishes the expected historical `:fail`, fixed `:pass`,
 and upstream `:xpass`. See [the portable matrix contract](docs/jolt-regression-matrix.md).
 
+Record-only compiler checkpoints can also be captured as canonical evidence and
+reduced to dependency-free observation fixtures. See
+[checkpoint history evidence](docs/checkpoint-history.md).
+
 Run the compiled scenario with the current aspect-capable compiler checkout:
 
 ```sh
