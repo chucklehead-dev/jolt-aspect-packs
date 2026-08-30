@@ -1,6 +1,10 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
 
+define assert-effect-report
+	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
+endef
+
 .PHONY: test db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test
 
 test:
@@ -55,6 +59,7 @@ core-async-aspect-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.core-async \
 	    -o target/core-async-aspect-scenario
 	@scenarios/core-async/target/core-async-aspect-scenario
+	$(call assert-effect-report,scenarios/core-async/target/core-async-aspect-scenario.build/effects.edn,woven,scenarios/core-async/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test" "src"]}' \
 	  -m jolt.aspect-packs.core-async.report-test \
@@ -67,6 +72,7 @@ core-async-fault-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.core-async \
 	    -o target/core-async-fault-scenario
 	@scenarios/core-async-faults/target/core-async-fault-scenario
+	$(call assert-effect-report,scenarios/core-async-faults/target/core-async-fault-scenario.build/effects.edn,woven,scenarios/core-async-faults/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test" "src"]}' \
 	  -m jolt.aspect-packs.core-async.fault-report-test \
@@ -79,6 +85,7 @@ core-async-plain-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.core-async \
 	    -o target/core-async-plain-scenario
 	@scenarios/core-async-plain/target/core-async-plain-scenario plain
+	$(call assert-effect-report,scenarios/core-async-plain/target/core-async-plain-scenario.build/effects.edn,plain)
 
 db-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -87,6 +94,7 @@ db-aspect-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.db \
 	    -o target/db-aspect-scenario
 	@scenarios/db/target/db-aspect-scenario
+	$(call assert-effect-report,scenarios/db/target/db-aspect-scenario.build/effects.edn,woven,scenarios/db/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test" "src"] :deps {io.github.casselc/db {:git/url "https://github.com/casselc/db.git" :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}}}' \
 	  -m jolt.aspect-packs.db.report-test \
@@ -99,6 +107,7 @@ db-plain-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.db \
 	    -o target/db-plain-scenario
 	@scenarios/db-plain/target/db-plain-scenario plain
+	$(call assert-effect-report,scenarios/db-plain/target/db-plain-scenario.build/effects.edn,plain)
 
 http-client-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -106,6 +115,7 @@ http-client-aspect-smoke:
 	@cd scenarios/http-client && \
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.http-client \
 	    -o target/http-client-aspect-scenario
+	$(call assert-effect-report,scenarios/http-client/target/http-client-aspect-scenario.build/effects.edn,woven,scenarios/http-client/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.http-client.report-test \
@@ -117,6 +127,7 @@ http-server-aspect-smoke:
 	@cd scenarios/http-server && \
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.http-server \
 	    -o target/http-server-aspect-scenario
+	$(call assert-effect-report,scenarios/http-server/target/http-server-aspect-scenario.build/effects.edn,woven,scenarios/http-server/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.http-server.report-test \
@@ -128,6 +139,7 @@ glitter-aspect-smoke:
 	@cd scenarios/glitter && \
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.glitter \
 	    -o target/glitter-aspect-scenario
+	$(call assert-effect-report,scenarios/glitter/target/glitter-aspect-scenario.build/effects.edn,woven,scenarios/glitter/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.glitter.report-test \
@@ -140,6 +152,7 @@ glimmer-aspect-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.glimmer \
 	    -o target/glimmer-aspect-scenario
 	@scenarios/glimmer/target/glimmer-aspect-scenario
+	$(call assert-effect-report,scenarios/glimmer/target/glimmer-aspect-scenario.build/effects.edn,woven,scenarios/glimmer/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test"]}' \
 	  -m jolt.aspect-packs.glimmer.report-test \
@@ -152,6 +165,7 @@ mycelium-aspect-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.mycelium \
 	    -o target/mycelium-aspect-scenario
 	@scenarios/mycelium/target/mycelium-aspect-scenario
+	$(call assert-effect-report,scenarios/mycelium/target/mycelium-aspect-scenario.build/effects.edn,woven,scenarios/mycelium/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test" "src"]}' \
 	  -m jolt.aspect-packs.mycelium.report-test \
@@ -164,6 +178,7 @@ mycelium-plain-smoke:
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.mycelium \
 	    -o target/mycelium-plain-scenario
 	@scenarios/mycelium-plain/target/mycelium-plain-scenario plain
+	$(call assert-effect-report,scenarios/mycelium-plain/target/mycelium-plain-scenario.build/effects.edn,plain)
 
 db-source-test:
 	$(JOLT) -M:db-conformance

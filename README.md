@@ -11,7 +11,8 @@ It contains:
 - provider-neutral semantic history consumers;
 - bounded correctness models and minimized regressions;
 - scenarios pinned to the source revision each pack claims to understand; and
-- compiled weave-report gates against the aspect-capable Jolt compiler.
+- compiled weave-report and three-phase effect-evidence gates against the
+  aspect-capable Jolt compiler.
 
 Nothing activates because this repository is present on the classpath. A
 consumer must explicitly select a manifest and provider in `:jolt/build`.
@@ -120,6 +121,12 @@ Run the compiled scenario with the current aspect-capable compiler checkout:
   env JOLT_ASPECT_JOLT=/path/to/jolt/target/release/jolt \
   make aspect-smoke
 ```
+
+Every scenario build also validates its generated
+`TARGET.build/effects.edn`. Woven builds cross-check the effect report's build
+identity and preserved site count against `target/aspects.edn`; plain builds
+prove all three phases contain no aspect sites. The currently validated
+compiler revision is recorded per target in `targets.edn`.
 
 Run the independent Glitter source/lifecycle conformance gate without a display
 server:

@@ -280,7 +280,7 @@
            (get-in provider/aspect-provider [:libraries 'jolt-lang/db])))
     (is (= provider/target-revision (:git/sha target)))
     (is (= {:id 'jolt-lang/jolt
-            :git/sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
+            :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
             :chez "10.4.1"}
            (:compiler target)))
     (is (= provider/seam-revision (:seam-revision target)))

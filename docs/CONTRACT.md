@@ -13,6 +13,13 @@ The conformance gate must prove all of the following:
 5. Advice preserves application results and thrown identity.
 6. Semantic histories are contiguous, well formed, and bounded before a model
    or property checker consumes them.
+7. Every compiled scenario publishes a nonempty `PATH.build/effects.edn` with
+   exact `:plain`, `:woven`, and `:optimized` subject coverage and no compiler
+   verification findings.
+8. A woven effect report has the same build identity as its aspect report, and
+   its distinct closure site count equals the aspect report's physical match
+   count before and after optimization. A plain report has identity `"plain"`
+   and contains no aspect sites in any phase.
 
 Packs may be maintained without cooperation from the target project. A target
 project can later adopt the same manifest as an inert resource without taking
@@ -22,6 +29,12 @@ Providers are independent and composable. OpenTelemetry, a Hegel event
 journal, a profiler, or an application policy consumer may select the same
 semantic roles in an explicit order. Assertions and expensive model checking
 must remain outside fail-open production advice.
+
+Effect evidence is a separate compiler ABI from the aspect report. The aspect
+report proves which transformations were selected and matched; the effect
+report proves semantic reachability and preservation across compiler phases.
+Pack gates validate both and cross-check only their shared build identity and
+site cardinality. They do not copy compiler analysis into provider manifests.
 
 Every target owns distinct manifest, provider, model, scenario, and test
 namespaces. Only mechanics that are demonstrably target-neutral belong in a
