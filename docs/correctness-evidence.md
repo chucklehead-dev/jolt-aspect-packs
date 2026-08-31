@@ -27,6 +27,33 @@ Issues fixed only on a user or organization fork remain open with status
 resolved, including an explicit decision not to upstream. Creating or updating
 this ledger does not authorize an upstream pull request.
 
+## Formal-model anti-vacuity
+
+Every SMT model used as correctness evidence must have a machine-readable
+anti-vacuity contract and pass `test/formal/formal_antivacuity.clj`. The checked
+implementation or selector branch must be encoded independently of the
+reference property: it may not depend on the reference predicate, share a
+derived helper with it, or reduce to the same normalized SMT expression through
+renamed or multi-hop aliases. Raw input variables may be shared; independently
+derived predicates may not. This is a deliberately strong rule. Split common
+domain constraints from the two decision encodings instead of exempting a
+shared decision helper.
+
+The same model must contain, and Z3 must execute, all three semantic controls:
+
+1. the reference implementation's disagreement query is `unsat`;
+2. at least one deliberately faulty implementation's same disagreement query
+   is `sat`; and
+3. at least one distinct boundary/non-vacuity query is `sat`.
+
+The EDN contract identifies roles and selector values, not assertion names.
+The gate parses SMT-LIB structure, follows defining equalities, selects the
+reference implementation branch, compares normalized definition graphs, and
+matches scoped assertions to solver results. Grep checks for names are not
+evidence of encoding independence. This structural gate complements rather
+than replaces a semantic oracle: algebraically disguised duplication and two
+independently written encodings with the same mistake remain possible.
+
 The initial retrospective core.async set is indexed by
 [`#1`](https://github.com/chucklehead-dev/jolt-aspect-packs/issues/1). Its fix
 commits predate the ledger and retain their published, manifest-pinned SHAs;
