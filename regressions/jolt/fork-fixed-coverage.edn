@@ -1,9 +1,9 @@
 {:schema 1
  :repository "chucklehead-dev/jolt-aspect-packs"
  :label "status:fixed-in-fork"
- :captured-at "2026-08-30T19:47:00Z"
+ :captured-at "2026-08-31T01:11:36Z"
  :fork-fixed-issues
- [18 22 23 25 26 30 31 32 33 34 35 36 41 43 44 45 49 50 51 52]
+ [18 22 23 25 26 30 31 32 33 34 35 36 41 43 44 45 46 49 50 51 52]
  :known-missing
  [{:issue 18
    :reason "Extract the fiber-safe lazy realization witness."

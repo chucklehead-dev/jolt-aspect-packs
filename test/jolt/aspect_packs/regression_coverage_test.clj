@@ -180,6 +180,6 @@
         manifest (coverage/read-edn
                   "regressions/jolt/fork-fixed-coverage.edn")]
     (is (= :valid (:status (coverage/check catalog manifest))))
-    (is (= 20 (:fork-fixed (coverage/check catalog manifest))))
-    (is (= 4 (:portable (coverage/check catalog manifest))))
+    (is (= 21 (:fork-fixed (coverage/check catalog manifest))))
+    (is (= 5 (:portable (coverage/check catalog manifest))))
     (is (= 16 (:known-missing (coverage/check catalog manifest))))))
