@@ -12,16 +12,38 @@
            {:seq 3 :actor "producer/0" :id "queue/put" :hit 2 :action nil}]
    :next-seq 4})
 
+(def action-snapshot
+  {:generation 7
+   :version 1
+   :sites {"queue/put" [:continue :yield]
+           "queue/take" [:barrier :cancel :continue :fault]}
+   :plan {["producer/0" "queue/put" 1] :yield
+          ["consumer/0" "queue/take" 1] :barrier
+          ["producer/0" "queue/take" 1] :barrier}
+   :barriers {"queue/round-1"
+              [["consumer/0" "queue/take" 1]
+               ["producer/0" "queue/take" 1]]}
+   :trace [{:seq 1 :actor "producer/0" :id "queue/put" :hit 1
+            :action :yield}
+           {:seq 2 :actor "consumer/0" :id "queue/take" :hit 1
+            :action :barrier}
+           {:seq 3 :actor "producer/0" :id "queue/take" :hit 1
+            :action :barrier}]
+   :next-seq 4})
+
 (deftest runtime-snapshot-normalizes-to-canonical-portable-evidence
-  (is (= {:schema 1
-          :kind :jolt/checkpoint-history
-          :sites [{:id "queue/put" :dispositions [:continue :yield]}
-                  {:id "queue/take" :dispositions [:continue]}]
-          :plan [{:actor "consumer/0" :id "queue/take" :hit 1
-                  :action :continue}]
-          :events (:trace snapshot)
-          :next-seq 4}
-         (checkpoint-history/normalize snapshot))))
+  (let [evidence (checkpoint-history/normalize snapshot)]
+    (is (= {:schema 1
+            :kind :jolt/checkpoint-history
+            :sites [{:id "queue/put" :dispositions [:continue :yield]}
+                    {:id "queue/take" :dispositions [:continue]}]
+            :plan [{:actor "consumer/0" :id "queue/take" :hit 1
+                    :action :continue}]
+            :events (:trace snapshot)
+            :next-seq 4}
+           evidence))
+    (is (= {["consumer/0" "queue/take" 1] :continue}
+           (checkpoint-history/replay-manifest evidence)))))
 
 (deftest minimal-observations-are-plain-regression-data
   (let [observations (checkpoint-history/portable-observations snapshot)]
@@ -30,6 +52,61 @@
             {:actor "producer/0" :id "queue/put" :hit 2 :action nil}]
            observations))
     (is (= observations (read-string (pr-str observations))))))
+
+(deftest versioned-action-history-normalizes-and-reconstructs-an-inert-manifest
+  (let [evidence (checkpoint-history/normalize action-snapshot)]
+    (is (= 2 (:schema evidence)))
+    (is (= 1 (:version evidence)))
+    (is (= 7 (:generation evidence)))
+    (is (= [{:id "queue/round-1"
+             :selectors [["consumer/0" "queue/take" 1]
+                         ["producer/0" "queue/take" 1]]}]
+           (:barriers evidence)))
+    (is (= {:jolt.checkpoint/version 1
+            :jolt.checkpoint/plan
+            {["consumer/0" "queue/take" 1] :barrier
+             ["producer/0" "queue/put" 1] :yield
+             ["producer/0" "queue/take" 1] :barrier}
+            :jolt.checkpoint/barriers
+            {"queue/round-1"
+             [["consumer/0" "queue/take" 1]
+              ["producer/0" "queue/take" 1]]}}
+           (checkpoint-history/replay-manifest evidence)))
+    (is (= evidence
+           (checkpoint-history/normalize
+            (assoc action-snapshot
+                   :plan (:jolt.checkpoint/plan
+                          (checkpoint-history/replay-manifest evidence))
+                   :barriers (:jolt.checkpoint/barriers
+                              (checkpoint-history/replay-manifest evidence))))))))
+
+(deftest versioned-action-history-rejects-capability-and-barrier-corruption
+  (doseq [[kind changed]
+          [[:checkpoint-history/undeclared-plan-action
+            (assoc-in action-snapshot
+                      [:sites "queue/put"] [:continue])]
+           [:checkpoint-history/invalid-barrier-id
+            (assoc action-snapshot :barriers
+                   {"unqualified" [["consumer/0" "queue/take" 1]
+                                    ["producer/0" "queue/take" 1]]})]
+           [:checkpoint-history/noncanonical-barrier-selectors
+            (assoc-in action-snapshot [:barriers "queue/round-1"]
+                      [["producer/0" "queue/take" 1]
+                       ["consumer/0" "queue/take" 1]])]
+           [:checkpoint-history/duplicate-barrier-actor
+            (assoc-in action-snapshot [:barriers "queue/round-1"]
+                      [["consumer/0" "queue/take" 1]
+                       ["consumer/0" "queue/take" 2]])]
+           [:checkpoint-history/unplanned-barrier-selector
+            (assoc-in action-snapshot [:barriers "queue/round-1" 1]
+                      ["producer/0" "queue/take" 2])]
+           [:checkpoint-history/orphaned-barrier-action
+            (assoc action-snapshot :barriers {})]]]
+    (try
+      (checkpoint-history/normalize changed)
+      (is false (str "expected " kind))
+      (catch Exception error
+        (is (= kind (:kind (ex-data error))))))))
 
 (deftest validation-rejects-non-vacuous-history-corruption
   (doseq [[kind changed]

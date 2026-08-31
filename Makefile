@@ -1,14 +1,18 @@
 JOLT ?= jolt
 JOLT_ASPECT_JOLT ?=
+CHECKPOINT_TIMEOUT ?= timeout
 
 define assert-effect-report
 	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
 endef
 
-.PHONY: test checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
+.PHONY: test checkpoint-replay-proof checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
 
-test:
+test: checkpoint-replay-proof
 	$(JOLT) -M:test
+
+checkpoint-replay-proof:
+	@sh test/formal/check-checkpoint-replay.sh
 
 checkpoint-runtime-history:
 	@test -n "$(JOLT_CHECKPOINT_JOLT)" || \
@@ -21,22 +25,37 @@ checkpoint-runtime-history:
 	  case "$(JOLT_CHECKPOINT_JOLT)" in /*) ;; *) echo "JOLT_CHECKPOINT_JOLT must be absolute" >&2; exit 2;; esac; \
 	  case "$(JOLT_CHECKPOINT_SOURCE)" in /*) ;; *) echo "JOLT_CHECKPOINT_SOURCE must be absolute" >&2; exit 2;; esac; \
 	  test -x "$(JOLT_CHECKPOINT_JOLT)" || (echo "checkpoint Jolt is not executable" >&2; exit 2); \
+	  command -v "$(CHECKPOINT_TIMEOUT)" >/dev/null || \
+	    (echo "checkpoint runtime gate requires $(CHECKPOINT_TIMEOUT)" >&2; exit 2); \
 	  test "$$(git -C "$(JOLT_CHECKPOINT_SOURCE)" rev-parse --is-inside-work-tree 2>/dev/null)" = true || \
 	    (echo "checkpoint source is not a Git checkout" >&2; exit 2); \
 	  test -z "$$(git -C "$(JOLT_CHECKPOINT_SOURCE)" status --porcelain --untracked-files=no)" || \
 	    (echo "checkpoint Jolt source has tracked changes" >&2; exit 2); \
+	  revision=$$(git -C "$(JOLT_CHECKPOINT_SOURCE)" rev-parse HEAD); \
 	  short=$$(git -C "$(JOLT_CHECKPOINT_SOURCE)" rev-parse --short=8 HEAD); \
 	  version=$$("$(JOLT_CHECKPOINT_JOLT)" --version); \
 	  case "$$version" in *dirty*) echo "checkpoint Jolt binary is dirty: $$version" >&2; exit 2;; esac; \
 	  case "$$version" in *-g$$short) ;; *) echo "checkpoint source/binary revision mismatch: $$short / $$version" >&2; exit 2;; esac; \
 	  snapshot=$$(mktemp); \
-	  trap 'rm -f "$$snapshot"' EXIT; \
+	  liveness=$$(mktemp); \
+	  trap 'rm -f "$$snapshot" "$$liveness"' EXIT; \
 	  cd "$(JOLT_CHECKPOINT_SOURCE)"; \
-	  "$(JOLT_CHEZ)" --script "$(CURDIR)/test/fixtures/checkpoint-runtime/producer.ss" >"$$snapshot"; \
+	  if "$(CHECKPOINT_TIMEOUT)" 15s "$(JOLT_CHEZ)" --script \
+	       "$(CURDIR)/test/fixtures/checkpoint-runtime/producer.ss" \
+	       --crashed-worker >/dev/null 2>"$$liveness"; then \
+	    echo "crashed-worker producer unexpectedly succeeded" >&2; exit 1; \
+	  else liveness_status=$$?; fi; \
+	  test "$$liveness_status" -ne 124 || \
+	    (echo "crashed-worker producer exceeded process deadline" >&2; cat "$$liveness" >&2; exit 1); \
+	  grep -q "intentional worker crash observed after join" "$$liveness" || \
+	    (echo "crashed-worker producer did not report the expected crash" >&2; cat "$$liveness" >&2; exit 1); \
+	  grep -q "crashed worker joined" "$$liveness" || \
+	    (echo "crashed-worker producer did not join its worker" >&2; cat "$$liveness" >&2; exit 1); \
+	  "$(CHECKPOINT_TIMEOUT)" 60s "$(JOLT_CHEZ)" --script "$(CURDIR)/test/fixtures/checkpoint-runtime/producer.ss" >"$$snapshot"; \
 	  cd "$(CURDIR)"; \
-	  "$(JOLT_CHECKPOINT_JOLT)" -Srepro \
+	  "$(CHECKPOINT_TIMEOUT)" 30s "$(JOLT_CHECKPOINT_JOLT)" -Srepro \
 	    -Sdeps '{:paths ["src" "test"]}' -M \
-	    -m jolt.aspect-packs.checkpoint-runtime-integration-test "$$snapshot"
+	    -m jolt.aspect-packs.checkpoint-runtime-integration-test "$$snapshot" "$$revision"
 
 jolt-regression-matrix:
 	@test -n "$(JOLT_UNFIXED)" || \

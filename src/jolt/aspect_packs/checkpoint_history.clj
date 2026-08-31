@@ -1,5 +1,7 @@
 (ns jolt.aspect-packs.checkpoint-history
-  "Portable validation and extraction for Jolt record-only checkpoint journals.")
+  "Portable validation and extraction for Jolt checkpoint journals and inert
+  replay manifests."
+  (:require [clojure.set :as set]))
 
 (def ^:private supported-dispositions
   #{:barrier :cancel :continue :fault :yield})
@@ -56,7 +58,7 @@
               {:plan-key key}))
   key)
 
-(defn- validate-plan! [sites plan]
+(defn- validate-plan! [sites plan versioned?]
   (when-not (map? plan)
     (invalid! :checkpoint-history/invalid-plan
               "checkpoint snapshot plan must be a map"
@@ -68,19 +70,89 @@
         (invalid! :checkpoint-history/unregistered-plan-site
                   "checkpoint plan names an unregistered site"
                   {:plan-key key}))
-      (when-not (= :continue action)
+      (when-not (if versioned?
+                  (contains? supported-dispositions action)
+                  (= :continue action))
         (invalid! :checkpoint-history/invalid-plan-action
-                  "record-only checkpoint plans support only :continue"
-                  {:plan-key key :action action}))))
+                  (if versioned?
+                    "checkpoint plan contains an unsupported action"
+                    "legacy checkpoint plans support only :continue")
+                  {:plan-key key :action action}))
+      (when-not (some #{action} (get sites id))
+        (invalid! :checkpoint-history/undeclared-plan-action
+                  "checkpoint plan selects an action absent from the site's dispositions"
+                  {:plan-key key :action action
+                   :dispositions (get sites id)}))))
   plan)
 
-(defn- validate-event-shape! [event]
+(defn- strictly-canonical-selectors? [selectors]
+  (every? neg?
+          (map compare-plan-keys selectors (next selectors))))
+
+(defn- validate-barriers! [plan barriers]
+  (when-not (map? barriers)
+    (invalid! :checkpoint-history/invalid-barriers
+              "versioned checkpoint snapshot barriers must be a map"
+              {:value barriers}))
+  (let [seen
+        (reduce-kv
+         (fn [seen barrier-id selectors]
+           (when-not (qualified-id? barrier-id)
+             (invalid! :checkpoint-history/invalid-barrier-id
+                       "checkpoint barrier id must be a qualified string"
+                       {:barrier-id barrier-id}))
+           (when-not (and (vector? selectors) (seq selectors))
+             (invalid! :checkpoint-history/invalid-barrier-selectors
+                       "checkpoint barrier selectors must be a nonempty vector"
+                       {:barrier-id barrier-id :selectors selectors}))
+           (doseq [selector selectors]
+             (validate-plan-key! selector))
+           (when-not (strictly-canonical-selectors? selectors)
+             (invalid! :checkpoint-history/noncanonical-barrier-selectors
+                       "checkpoint barrier selectors must be in strict canonical order"
+                       {:barrier-id barrier-id :selectors selectors}))
+           (let [actors (map first selectors)]
+             (when-not (= (count actors) (count (distinct actors)))
+               (invalid! :checkpoint-history/duplicate-barrier-actor
+                         "one actor may occur only once in a checkpoint barrier"
+                         {:barrier-id barrier-id :selectors selectors})))
+           (reduce
+            (fn [seen selector]
+              (when (contains? seen selector)
+                (invalid! :checkpoint-history/duplicate-barrier-selector
+                          "checkpoint selector belongs to multiple barriers"
+                          {:barrier-id barrier-id :selector selector}))
+              (when-not (= :barrier (get plan selector))
+                (invalid! :checkpoint-history/unplanned-barrier-selector
+                          "checkpoint barrier selector must select :barrier in the plan"
+                          {:barrier-id barrier-id :selector selector
+                           :action (get plan selector)}))
+              (conj seen selector))
+            seen
+            selectors))
+         #{}
+         barriers)
+        planned (into #{} (keep (fn [[selector action]]
+                                  (when (= :barrier action) selector))) plan)]
+    (when-not (= planned seen)
+      (invalid! :checkpoint-history/orphaned-barrier-action
+                "every planned :barrier selector must belong to exactly one barrier"
+                {:missing (vec (sort compare-plan-keys
+                                     (set/difference planned seen)))
+                 :unexpected (vec (sort compare-plan-keys
+                                        (set/difference seen planned)))})))
+  barriers)
+
+(defn- validate-event-shape! [event versioned?]
   (when-not (and (map? event)
                  (positive-integer? (:seq event))
                  (actor? (:actor event))
                  (qualified-id? (:id event))
                  (positive-integer? (:hit event))
-                 (contains? #{nil :continue} (:action event)))
+                 (contains? (if versioned?
+                              (conj supported-dispositions nil)
+                              #{nil :continue})
+                            (:action event)))
     (invalid! :checkpoint-history/invalid-event
               "checkpoint trace contains a malformed event"
               {:event event}))
@@ -99,6 +171,12 @@
        (mapv (fn [[[actor id hit] action]]
                {:actor actor :id id :hit hit :action action}))))
 
+(defn- canonical-barriers [barriers]
+  (->> barriers
+       (sort-by key)
+       (mapv (fn [[id selectors]]
+               {:id id :selectors selectors}))))
+
 (defn normalize
   "Validate a `jolt.host/checkpoint-snapshot` value and return canonical,
   portable evidence. The result contains inert values only and is stable under
@@ -109,8 +187,21 @@
     (invalid! :checkpoint-history/invalid-snapshot
               "checkpoint snapshot must be a map"
               {:value snapshot}))
-  (let [sites (validate-sites! (:sites snapshot))
-        plan (validate-plan! sites (:plan snapshot))
+  (let [version (:version snapshot)
+        versioned? (some? version)
+        _ (when (and versioned? (not= 1 version))
+            (invalid! :checkpoint-history/invalid-version
+                      "unsupported checkpoint snapshot version"
+                      {:version version}))
+        generation (:generation snapshot)
+        _ (when (and versioned? (not (positive-integer? generation)))
+            (invalid! :checkpoint-history/invalid-generation
+                      "versioned checkpoint snapshot generation must be positive"
+                      {:generation generation}))
+        sites (validate-sites! (:sites snapshot))
+        plan (validate-plan! sites (:plan snapshot) versioned?)
+        barriers (when versioned?
+                   (validate-barriers! plan (:barriers snapshot)))
         trace (:trace snapshot)
         next-seq (:next-seq snapshot)]
     (when-not (vector? trace)
@@ -126,7 +217,7 @@
           (:events
            (reduce
             (fn [{:keys [hits events]} [index event]]
-              (validate-event-shape! event)
+              (validate-event-shape! event versioned?)
               (let [expected-seq (inc index)
                     actor (:actor event)
                     id (:id event)
@@ -162,12 +253,54 @@
                                 :action action})}))
             {:hits {} :events []}
             (map-indexed vector trace)))]
-      {:schema 1
-       :kind :jolt/checkpoint-history
-       :sites (canonical-sites sites)
-       :plan (canonical-plan plan)
-       :events events
-       :next-seq next-seq})))
+      (cond->
+       {:schema (if versioned? 2 1)
+        :kind :jolt/checkpoint-history
+        :sites (canonical-sites sites)
+        :plan (canonical-plan plan)
+        :events events
+        :next-seq next-seq}
+        versioned?
+        (assoc :generation generation
+               :version version
+               :barriers (canonical-barriers barriers))))))
+
+(defn replay-manifest
+  "Reconstruct the inert controller install value from canonical evidence.
+  Schema 1 returns the legacy flat plan map. Schema 2 returns the exact
+  namespaced versioned manifest accepted by `checkpoint-install-plan!`."
+  [evidence]
+  (when-not (and (= :jolt/checkpoint-history (:kind evidence))
+                 (contains? #{1 2} (:schema evidence))
+                 (vector? (:plan evidence)))
+    (invalid! :checkpoint-history/invalid-evidence
+              "replay-manifest requires canonical checkpoint history evidence"
+              {:value evidence}))
+  (let [plan (into {}
+                   (map (fn [{:keys [actor id hit action]}]
+                          [[actor id hit] action]))
+                   (:plan evidence))
+        sites (into {} (map (juxt :id :dispositions)) (:sites evidence))
+        barriers (into {} (map (juxt :id :selectors)) (:barriers evidence))
+        manifest (if (= 1 (:schema evidence))
+                   plan
+                   {:jolt.checkpoint/version (:version evidence)
+                    :jolt.checkpoint/plan plan
+                    :jolt.checkpoint/barriers barriers})
+        snapshot (cond->
+                  {:sites sites
+                   :plan plan
+                   :trace (:events evidence)
+                   :next-seq (:next-seq evidence)}
+                   (= 2 (:schema evidence))
+                   (assoc :generation (:generation evidence)
+                          :version (:version evidence)
+                          :barriers barriers))]
+    (when-not (= evidence (normalize snapshot))
+      (invalid! :checkpoint-history/noncanonical-evidence
+                "replay evidence must be the exact output of normalize"
+                {:value evidence}))
+    manifest))
 
 (defn portable-observations
   "Extract the minimal ordered observations suitable for an ordinary portable
