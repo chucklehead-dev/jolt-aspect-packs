@@ -1,10 +1,12 @@
 #!/bin/sh
 case "$*" in
+  *core_async_parking_transducer.clj*) id=issue-21 ;;
   *atomic_reference_cas_identity.clj*) id=issue-23 ;;
   *files_exclusive_create.clj*) id=issue-31 ;;
   *files_create_directories_existing_file.clj*) id=issue-32 ;;
   *atomic_numeric_width.clj*) id=issue-36 ;;
   *future_host_contract.clj*) id=issue-46 ;;
+  *core_async_alts_nil_prevalidation.clj*) id=issue-55 ;;
   *) echo "unknown regression case" >&2; exit 2 ;;
 esac
 echo "REGRESSION FAIL $id: controlled historical defect" >&2

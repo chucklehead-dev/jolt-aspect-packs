@@ -56,13 +56,13 @@ jolt-regression-matrix-self-test:
 	  JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/unfixed-jolt" \
 	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/fixed-jolt" \
 	    bb regressions/jolt/run.bb >"$$report"; \
-	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 5 :fail 5 :xpass 0 :error 0} (:summary r))))' "$$report"
+	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 7 :fail 7 :xpass 0 :error 0} (:summary r))))' "$$report"
 	@report=$$(mktemp); \
 	  trap 'rm -f "$$report"' EXIT; \
 	  JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/upstream-fixed-jolt" \
 	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/fixed-jolt" \
 	    bb regressions/jolt/run.bb >"$$report"; \
-	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 5 :fail 0 :xpass 5 :error 0} (:summary r))))' "$$report"
+	  bb -e '(let [r (read-string (slurp (first *command-line-args*)))] (assert (:ok? r)) (assert (= {:pass 7 :fail 0 :xpass 7 :error 0} (:summary r))))' "$$report"
 	@if JOLT_UNFIXED="$$PWD/test/fixtures/regression-matrix/unfixed-jolt" \
 	  JOLT_FIXED="$$PWD/test/fixtures/regression-matrix/malformed-jolt" \
 	  bb regressions/jolt/run.bb >/dev/null; then \

@@ -1,6 +1,22 @@
 {:schema 1
  :cases
- [{:id :jolt/atomic-reference-cas-identity
+ [{:id :jolt/core-async-parking-transducer
+   :script "regressions/jolt/cases/core_async_parking_transducer.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/21"
+   :bad-sha "6b8b2ed70594dc5b09f91eb5de5e01fc6fdf1557"
+   :fixed-sha "0626dede387461fc0b8d53fd44a83a4c937a967f"
+   :timeout-ms 15000
+   :expected {:pass "REGRESSION PASS issue-21"
+              :fail "REGRESSION FAIL issue-21"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-public-api-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-bounded-fiber-witness}
+    :checker {:source :park-lock-census
+              :status :independently-runnable}}}
+
+  {:id :jolt/atomic-reference-cas-identity
    :script "regressions/jolt/cases/atomic_reference_cas_identity.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/23"
    :bad-sha "6595356b50e53ff930ff3431c7cb17c0f1d454da"
@@ -78,4 +94,20 @@
     :hegel {:runtime-required? false
             :status :deterministic-jvm-differential-witness}
     :checker {:source :future-host-jvm-oracle
+              :status :independently-runnable}}}
+
+  {:id :jolt/core-async-alts-nil-prevalidation
+   :script "regressions/jolt/cases/core_async_alts_nil_prevalidation.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/55"
+   :bad-sha "6b8b2ed70594dc5b09f91eb5de5e01fc6fdf1557"
+   :fixed-sha "0626dede387461fc0b8d53fd44a83a4c937a967f"
+   :timeout-ms 15000
+   :expected {:pass "REGRESSION PASS issue-55"
+              :fail "REGRESSION FAIL issue-55"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-public-api-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-prevalidation-witness}
+    :checker {:source :alts-preflight-review
               :status :independently-runnable}}}]}
