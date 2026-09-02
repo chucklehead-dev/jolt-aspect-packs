@@ -197,5 +197,5 @@
                   "regressions/jolt/fork-fixed-coverage.edn")]
     (is (= :valid (:status (coverage/check catalog manifest))))
     (is (= 40 (:fork-fixed (coverage/check catalog manifest))))
-    (is (= 9 (:portable (coverage/check catalog manifest))))
-    (is (= 31 (:known-missing (coverage/check catalog manifest))))))
+    (is (= 10 (:portable (coverage/check catalog manifest))))
+    (is (= 30 (:known-missing (coverage/check catalog manifest))))))
