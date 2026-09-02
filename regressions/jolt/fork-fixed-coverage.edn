@@ -10,11 +10,6 @@
    :evidence {:repository "casselc/jolt"
               :sha "a4e5747344947163cc3d717e476795ad8f153376"
               :path "test/chez/async-alts-order-test.ss"}}
-  {:issue 9
-   :reason "Extract transformed dropping and sliding buffer progress."
-   :evidence {:repository "casselc/jolt"
-              :sha "a4e5747344947163cc3d717e476795ad8f153376"
-              :path "test/chez/unit.edn"}}
   {:issue 10
    :reason "Extract Clojure truthiness for optional channel transforms."
    :evidence {:repository "casselc/jolt"
