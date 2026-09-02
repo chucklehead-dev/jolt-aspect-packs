@@ -2,6 +2,7 @@
 case "$*" in
   *core_async_transducer_requires_buffer.clj*) id=issue-3 ;;
   *core_async_promise_channel_options.clj*) id=issue-4 ;;
+  *core_async_fulfilled_promise_put_progress.clj*) id=issue-5 ;;
   *core_async_parking_transducer.clj*) id=issue-21 ;;
   *atomic_reference_cas_identity.clj*) id=issue-23 ;;
   *files_exclusive_create.clj*) id=issue-31 ;;
