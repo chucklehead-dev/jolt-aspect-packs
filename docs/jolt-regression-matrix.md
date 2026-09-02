@@ -6,10 +6,10 @@ The case programs have no dependency on the aspect compiler, jolt-hegel, this
 repository's source namespaces, or a test framework. Cases normally use public
 APIs. Issues #5, #6, #8, and #11 deliberately use Jolt's exposed
 `__promise-buffer` boundary to isolate fulfilled-buffer stepping and native
-alts behavior from issue #4's constructor defect. Issue #12 uses the exposed
-`jolt.scheme` seam to run the notification fixed point against a deliberately
-inactive native registration. Their catalog provenance labels each internal
-boundary explicitly.
+alts behavior from issue #4's constructor defect. Issues #12 and #13 use the
+exposed `jolt.scheme` seam to observe native notification and pair-ownership
+boundaries without the original native test harness. Their catalog provenance
+labels each internal boundary explicitly.
 
 Set both binaries to absolute paths and run:
 
@@ -93,7 +93,7 @@ make jolt-regression-coverage-live
 ```
 
 This is an explicit debt migration rather than a coverage claim. The current
-snapshot has 40 open fork-fixed issues, 15 with portable cases and 25 with named
+snapshot has 40 open fork-fixed issues, 16 with portable cases and 24 with named
 extraction debt. New debt is not silently accepted. Existing rows are burned
 down by adding positive/negative cases that run without aspects, Hegel, or the
 original checker.

@@ -161,6 +161,22 @@
     :checker {:source :jolt-core-async-native-notification-contract
               :status :independently-runnable}}}
 
+  {:id :jolt/core-async-alts-pair-ownership
+   :script "regressions/jolt/cases/core_async_alts_pair_ownership.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/13"
+   :bad-sha "f8b1870975909967c6826e96fb8450ade2ac6d8d"
+   :fixed-sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+   :timeout-ms 15000
+   :expected {:pass "REGRESSION PASS issue-13"
+              :fail "REGRESSION FAIL issue-13"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-jolt-internal-boundary-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-atomic-pair-ownership-contract}
+    :checker {:source :jolt-core-async-pair-ownership-proof
+              :status :independently-runnable}}}
+
   {:id :jolt/core-async-parking-transducer
    :script "regressions/jolt/cases/core_async_parking_transducer.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/21"
