@@ -10,11 +10,6 @@
    :evidence {:repository "casselc/jolt"
               :sha "a4e5747344947163cc3d717e476795ad8f153376"
               :path "test/chez/async-alts-order-test.ss"}}
-  {:issue 12
-   :reason "Extract fixed-point pruning of inactive alts registrations."
-   :evidence {:repository "casselc/jolt"
-              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
-              :path "test/chez/unit.edn"}}
   {:issue 13
    :reason "Package the atomic rendezvous pair ownership proof as a portable regression."
    :evidence {:repository "casselc/jolt"

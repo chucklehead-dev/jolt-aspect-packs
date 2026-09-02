@@ -145,6 +145,22 @@
     :checker {:source :jolt-core-async-uncaught-reporting-contract
               :status :independently-runnable}}}
 
+  {:id :jolt/core-async-inactive-alts-pruning
+   :script "regressions/jolt/cases/core_async_inactive_alts_pruning.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/12"
+   :bad-sha "f8b1870975909967c6826e96fb8450ade2ac6d8d"
+   :fixed-sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+   :timeout-ms 15000
+   :expected {:pass "REGRESSION PASS issue-12"
+              :fail "REGRESSION FAIL issue-12"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-jolt-internal-boundary-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-fixed-point-pruning-contract}
+    :checker {:source :jolt-core-async-native-notification-contract
+              :status :independently-runnable}}}
+
   {:id :jolt/core-async-parking-transducer
    :script "regressions/jolt/cases/core_async_parking_transducer.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/21"
