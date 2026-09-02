@@ -11,6 +11,7 @@ case "$*" in
   *core_async_unhandled_transform_error.clj*) id=issue-11 ;;
   *core_async_inactive_alts_pruning.clj*) id=issue-12 ;;
   *core_async_alts_pair_ownership.clj*) id=issue-13 ;;
+  *core_async_pending_callback_ownership.clj*) id=issue-14 ;;
   *core_async_parking_transducer.clj*) id=issue-21 ;;
   *atomic_reference_cas_identity.clj*) id=issue-23 ;;
   *files_exclusive_create.clj*) id=issue-31 ;;

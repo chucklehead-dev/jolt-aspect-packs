@@ -10,11 +10,6 @@
    :evidence {:repository "casselc/jolt"
               :sha "a4e5747344947163cc3d717e476795ad8f153376"
               :path "test/chez/async-alts-order-test.ss"}}
-  {:issue 14
-   :reason "Extract unified pending waiter ownership across public APIs."
-   :evidence {:repository "casselc/jolt"
-              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
-              :path "test/chez/unit.edn"}}
   {:issue 15
    :reason "Package transformed close/drain conservation as a portable regression."
    :evidence {:repository "casselc/jolt"
