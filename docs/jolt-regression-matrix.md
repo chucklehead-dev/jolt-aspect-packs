@@ -93,7 +93,7 @@ make jolt-regression-coverage-live
 ```
 
 This is an explicit debt migration rather than a coverage claim. The current
-snapshot has 40 open fork-fixed issues, 17 with portable cases and 23 with named
+snapshot has 41 open fork-fixed issues, 17 with portable cases and 24 with named
 extraction debt. New debt is not silently accepted. Existing rows are burned
 down by adding positive/negative cases that run without aspects, Hegel, or the
 original checker.

@@ -1,9 +1,9 @@
 {:schema 2
  :repository "chucklehead-dev/jolt-aspect-packs"
  :label "status:fixed-in-fork"
- :captured-at "2026-09-02T01:16:47Z"
+ :captured-at "2026-09-02T18:49:54Z"
  :fork-fixed-issues
- [2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 21 22 25 26 30 31 32 33 34 41 43 44 45 46 49 50 51 55 57 59 62 63 65 66 67]
+ [2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 21 22 25 26 30 31 32 33 34 41 43 44 45 46 49 50 51 55 57 59 62 63 65 66 67 68]
  :known-missing
  [{:issue 2
    :reason "Extract the randomized alts traversal witness as a portable regression."
@@ -23,8 +23,8 @@
   {:issue 22
    :reason "Add the public Atom value-CAS identity witness separately from AtomicReference."
    :evidence {:repository "casselc/jolt"
-              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
-              :path "test/chez/concurrency-history-test.clj"}}
+              :sha "3dd7bfc9a3709675b05229a25c890c0268915078"
+              :path "test/chez/unit.edn"}}
   {:issue 25
    :reason "Extract the reentrant System property rendering witness."
    :evidence {:repository "casselc/jolt"
@@ -108,7 +108,7 @@
   {:issue 65
    :reason "Package atomic runtime-cache publication and concurrent-winner behavior."
    :evidence {:repository "casselc/jolt"
-              :sha "580640bcb9445be36fa8317ff14a426bebf7c9f0"
+              :sha "3eedfaff621af2bd8de3287ec69dd00a643f98c3"
               :path "host/chez/build-smoke.sh"}}
   {:issue 66
    :reason "Extract dependency-owned time provider discovery and consumer ownership."
@@ -119,4 +119,9 @@
    :reason "Extract the monotonic timeout-scaling gate and quadratic negative control."
    :evidence {:repository "casselc/jolt"
               :sha "1fa62d3627263df63f80d7dc688d1f578b7fdb07"
-              :path "test/hotpath_scaling_test.clj"}}]}
+              :path "test/hotpath_scaling_test.clj"}}
+  {:issue 68
+   :reason "Extract the stock-compatible large-input digest timing witness and update-time array snapshot controls."
+   :evidence {:repository "casselc/jolt-crypto"
+              :sha "979219b158b18c49e55b09f9916a22d9bdea4a63"
+              :path "test/jolt/crypto_test.clj"}}]}

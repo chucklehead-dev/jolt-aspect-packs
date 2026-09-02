@@ -292,8 +292,8 @@
   {:id :jolt/core-async-alts-nil-prevalidation
    :script "regressions/jolt/cases/core_async_alts_nil_prevalidation.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/55"
-   :bad-sha "6b8b2ed70594dc5b09f91eb5de5e01fc6fdf1557"
-   :fixed-sha "0626dede387461fc0b8d53fd44a83a4c937a967f"
+   :bad-sha "9b7683953b444ece2a2e783e8fa46d31177bb476"
+   :fixed-sha "b2700203858396f75b0ad818d85ae95fc816ceac"
    :timeout-ms 15000
    :expected {:pass "REGRESSION PASS issue-55"
               :fail "REGRESSION FAIL issue-55"}
