@@ -108,6 +108,26 @@
     (is (= :invalid (:status result)))
     (is (contains? (codes result) :catalog/sha-distinction))))
 
+(deftest optional-stderr-evidence-must-be-nonblank-and-anchored-in-script
+  (let [with-stderr (assoc-in catalog
+                              [:cases 0 :expected :stderr-contains]
+                              "FIXTURE STDERR issue-2")]
+    (is (= :valid (:status (coverage/check with-stderr manifest))))
+    (is (contains?
+         (codes (coverage/check
+                 (assoc-in with-stderr
+                           [:cases 0 :expected :stderr-contains]
+                           "MISSING STDERR MARKER")
+                 manifest))
+         :catalog/script-signatures))
+    (is (contains?
+         (codes (coverage/check
+                 (assoc-in with-stderr
+                           [:cases 0 :expected :stderr-contains]
+                           "")
+                 manifest))
+         :catalog/expected))))
+
 (deftest malformed-snapshot-debt-and-case-url-are-rejected
   (is (contains? (codes (coverage/check catalog
                                          (assoc manifest :fork-fixed-issues [2 1 1])))
@@ -197,5 +217,5 @@
                   "regressions/jolt/fork-fixed-coverage.edn")]
     (is (= :valid (:status (coverage/check catalog manifest))))
     (is (= 40 (:fork-fixed (coverage/check catalog manifest))))
-    (is (= 13 (:portable (coverage/check catalog manifest))))
-    (is (= 27 (:known-missing (coverage/check catalog manifest))))))
+    (is (= 14 (:portable (coverage/check catalog manifest))))
+    (is (= 26 (:known-missing (coverage/check catalog manifest))))))

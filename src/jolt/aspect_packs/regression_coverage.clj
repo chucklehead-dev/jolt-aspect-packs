@@ -88,6 +88,7 @@
                          (slurp (:script row)))
         pass-signature (:pass expected)
         fail-signature (:fail expected)
+        stderr-signature (:stderr-contains expected)
         issue-signature (when issue (str "issue-" issue))]
     (vec
      (concat
@@ -125,9 +126,13 @@
                      {:index index :expected :positive-integer}
                      (:timeout-ms row))])
          (when-not (and (map? expected)
-                        (= #{:pass :fail} (set (keys expected)))
+                        (contains? #{#{:pass :fail}
+                                     #{:pass :fail :stderr-contains}}
+                                   (set (keys expected)))
                         (non-blank-string? (:pass expected))
                         (non-blank-string? (:fail expected))
+                        (or (not (contains? expected :stderr-contains))
+                            (non-blank-string? stderr-signature))
                         (not= (:pass expected) (:fail expected)))
            [(problem :catalog/expected
                      {:index index :expected :distinct-pass-fail-signatures}
@@ -157,13 +162,16 @@
                         (str/includes? pass-signature issue-signature)
                         (str/includes? fail-signature issue-signature)
                         (str/includes? script-content pass-signature)
-                        (str/includes? script-content fail-signature))
+                        (str/includes? script-content fail-signature)
+                        (or (nil? stderr-signature)
+                            (str/includes? script-content stderr-signature)))
            [(problem :catalog/script-signatures
                      {:index index
                       :expected :issue-correlated-signatures-in-script}
                      {:issue issue
                       :pass pass-signature
-                      :fail fail-signature})])))))))
+                      :fail fail-signature
+                      :stderr-contains stderr-signature})])))))))
 
 (defn- catalog-problems [catalog]
   (let [allowed #{:schema :cases}

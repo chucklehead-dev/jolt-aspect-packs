@@ -63,19 +63,26 @@
             combined (str out "\n" err)
             pass? (str/includes? combined (get-in case [:expected :pass]))
             fail? (str/includes? combined (get-in case [:expected :fail]))
+            stderr-marker (get-in case [:expected :stderr-contains])
+            stderr-matched? (or (nil? stderr-marker)
+                                (str/includes? err stderr-marker))
             timed-out? (contains? #{124 137} exit)
             status
             (cond
               timed-out? :error
-              (and (= variant :unfixed) (zero? exit) pass? (not fail?)) :xpass
+              (and (= variant :unfixed) (zero? exit) pass? (not fail?)
+                   stderr-matched?) :xpass
               (and (= variant :unfixed) (not (zero? exit)) fail? (not pass?)) :fail
-              (and (= variant :fixed) (zero? exit) pass? (not fail?)) :pass
+              (and (= variant :fixed) (zero? exit) pass? (not fail?)
+                   stderr-matched?) :pass
               (and (= variant :fixed) (not (zero? exit)) fail? (not pass?)) :fail
               :else :error)]
         {:variant variant
          :status status
          :exit exit
          :timed-out? timed-out?
+         :stderr-required? (some? stderr-marker)
+         :stderr-matched? stderr-matched?
          :stdout out
          :stderr err})
       (catch Throwable error
@@ -93,10 +100,21 @@
                :expected :provenance]]
     (when-not (contains? case key)
       (die! (str "case missing " key ": " (pr-str (:id case))))))
-  (when-not (and (pos-int? (:timeout-ms case))
-                 (string? (get-in case [:expected :pass]))
-                 (string? (get-in case [:expected :fail])))
-    (die! (str "invalid timeout/signatures for " (:id case))))
+  (let [expected (:expected case)
+        expected-keys (when (map? expected) (set (keys expected)))]
+    (when-not (and (pos-int? (:timeout-ms case))
+                   (contains? #{#{:pass :fail}
+                                #{:pass :fail :stderr-contains}}
+                              expected-keys)
+                   (string? (:pass expected))
+                   (not (str/blank? (:pass expected)))
+                   (string? (:fail expected))
+                   (not (str/blank? (:fail expected)))
+                   (or (not (contains? expected :stderr-contains))
+                       (and (string? (:stderr-contains expected))
+                            (not (str/blank?
+                                  (:stderr-contains expected))))))
+      (die! (str "invalid timeout/signatures for " (:id case)))))
   case)
 
 (let [catalog-path (fs/path repo-root "regressions/jolt/cases.edn")

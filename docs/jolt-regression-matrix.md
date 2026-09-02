@@ -4,7 +4,7 @@ The regression matrix runs ordinary, maintainer-readable Clojure programs
 against two explicit Jolt executables. It never changes a checkout or branch.
 The case programs have no dependency on the aspect compiler, jolt-hegel, this
 repository's source namespaces, or a test framework. Cases normally use public
-APIs. Issues #5, #6, and #8 deliberately use Jolt's exposed
+APIs. Issues #5, #6, #8, and #11 deliberately use Jolt's exposed
 `__promise-buffer` boundary to isolate fulfilled-buffer stepping and native
 alts behavior from issue #4's constructor defect; their catalog provenance
 labels that internal boundary explicitly.
@@ -26,8 +26,11 @@ For the `:unfixed` binary, a violated property with the declared failure
 signature is `:fail` and is the expected historical result. A passing property
 is `:xpass`: upstream may have incorporated the fix and the issue should be
 rechecked. For the `:fixed` binary, only a zero exit with the declared pass
-signature is `:pass`. Timeouts, missing signatures, unexpected exits, missing
-scripts, malformed catalog entries, and invalid executables fail closed.
+signature is `:pass`. A case may also declare `:stderr-contains`; a fixed pass
+or upstream xpass then requires that marker in stderr specifically, not merely
+in combined process output. Timeouts, missing signatures or diagnostics,
+unexpected exits, missing scripts, malformed catalog entries, and invalid
+executables fail closed.
 
 Each entry in `regressions/jolt/cases.edn` records the central issue, exact
 historical bad and fixed commits, timeout and signatures, plus how the witness
@@ -88,7 +91,7 @@ make jolt-regression-coverage-live
 ```
 
 This is an explicit debt migration rather than a coverage claim. The current
-snapshot has 40 open fork-fixed issues, 13 with portable cases and 27 with named
+snapshot has 40 open fork-fixed issues, 14 with portable cases and 26 with named
 extraction debt. New debt is not silently accepted. Existing rows are burned
 down by adding positive/negative cases that run without aspects, Hegel, or the
 original checker.

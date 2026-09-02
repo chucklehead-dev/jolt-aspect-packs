@@ -128,6 +128,23 @@
     :checker {:source :jvm-core-async-optional-argument-contract
               :status :independently-runnable}}}
 
+  {:id :jolt/core-async-unhandled-transform-error
+   :script "regressions/jolt/cases/core_async_unhandled_transform_error.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/11"
+   :bad-sha "772a27584d0bd151c421c90e80cb8c77012ab836"
+   :fixed-sha "a4e5747344947163cc3d717e476795ad8f153376"
+   :timeout-ms 30000
+   :expected {:pass "REGRESSION PASS issue-11"
+              :fail "REGRESSION FAIL issue-11"
+              :stderr-contains "Exception in core.async transducer:"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-jolt-internal-boundary-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-error-completion-contract}
+    :checker {:source :jolt-core-async-uncaught-reporting-contract
+              :status :independently-runnable}}}
+
   {:id :jolt/core-async-parking-transducer
    :script "regressions/jolt/cases/core_async_parking_transducer.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/21"

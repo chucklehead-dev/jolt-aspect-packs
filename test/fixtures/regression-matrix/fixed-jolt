@@ -8,6 +8,7 @@ case "$*" in
   *core_async_promise_alts_retention.clj*) id=issue-8 ;;
   *core_async_transformed_unblocking_buffers.clj*) id=issue-9 ;;
   *core_async_optional_transform_truthiness.clj*) id=issue-10 ;;
+  *core_async_unhandled_transform_error.clj*) id=issue-11 ;;
   *core_async_parking_transducer.clj*) id=issue-21 ;;
   *atomic_reference_cas_identity.clj*) id=issue-23 ;;
   *files_exclusive_create.clj*) id=issue-31 ;;
@@ -18,3 +19,10 @@ case "$*" in
   *) echo "unknown regression case" >&2; exit 2 ;;
 esac
 echo "REGRESSION PASS $id"
+if [ "$id" = issue-11 ]; then
+  if [ "${ISSUE_11_STDOUT_ONLY:-}" = 1 ]; then
+    echo "Exception in core.async transducer:"
+  elif [ "${OMIT_ISSUE_11_STDERR:-}" != 1 ]; then
+    echo "Exception in core.async transducer:" >&2
+  fi
+fi
