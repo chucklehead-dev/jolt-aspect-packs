@@ -10,11 +10,6 @@
    :evidence {:repository "casselc/jolt"
               :sha "a4e5747344947163cc3d717e476795ad8f153376"
               :path "test/chez/async-alts-order-test.ss"}}
-  {:issue 6
-   :reason "Extract native alts promise-put transformation behavior."
-   :evidence {:repository "casselc/jolt"
-              :sha "a4e5747344947163cc3d717e476795ad8f153376"
-              :path "test/chez/unit.edn"}}
   {:issue 7
    :reason "Extract full transformed fixed-buffer alts readiness."
    :evidence {:repository "casselc/jolt"

@@ -4,9 +4,10 @@ The regression matrix runs ordinary, maintainer-readable Clojure programs
 against two explicit Jolt executables. It never changes a checkout or branch.
 The case programs have no dependency on the aspect compiler, jolt-hegel, this
 repository's source namespaces, or a test framework. Cases normally use public
-APIs. Issue #5 deliberately uses Jolt's exposed `__promise-buffer` boundary to
-isolate fulfilled-buffer stepping from issue #4's constructor defect; its
-catalog provenance labels that internal boundary explicitly.
+APIs. Issues #5 and #6 deliberately use Jolt's exposed `__promise-buffer`
+boundary to isolate fulfilled-buffer stepping and native alts behavior from
+issue #4's constructor defect; their catalog provenance labels that internal
+boundary explicitly.
 
 Set both binaries to absolute paths and run:
 
@@ -87,7 +88,7 @@ make jolt-regression-coverage-live
 ```
 
 This is an explicit debt migration rather than a coverage claim. The current
-snapshot has 40 open fork-fixed issues, 8 with portable cases and 32 with named
+snapshot has 40 open fork-fixed issues, 9 with portable cases and 31 with named
 extraction debt. New debt is not silently accepted. Existing rows are burned
 down by adding positive/negative cases that run without aspects, Hegel, or the
 original checker.
