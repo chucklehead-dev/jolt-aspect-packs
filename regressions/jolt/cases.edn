@@ -112,6 +112,22 @@
     :checker {:source :jvm-core-async-unblocking-buffer-contract
               :status :independently-runnable}}}
 
+  {:id :jolt/core-async-optional-transform-truthiness
+   :script "regressions/jolt/cases/core_async_optional_transform_truthiness.clj"
+   :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/10"
+   :bad-sha "772a27584d0bd151c421c90e80cb8c77012ab836"
+   :fixed-sha "a4e5747344947163cc3d717e476795ad8f153376"
+   :timeout-ms 30000
+   :expected {:pass "REGRESSION PASS issue-10"
+              :fail "REGRESSION FAIL issue-10"}
+   :provenance
+   {:aspect {:runtime-required? false
+             :status :portable-public-api-extraction}
+    :hegel {:runtime-required? false
+            :status :deterministic-truthiness-contract}
+    :checker {:source :jvm-core-async-optional-argument-contract
+              :status :independently-runnable}}}
+
   {:id :jolt/core-async-parking-transducer
    :script "regressions/jolt/cases/core_async_parking_transducer.clj"
    :issue "https://github.com/chucklehead-dev/jolt-aspect-packs/issues/21"

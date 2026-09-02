@@ -7,6 +7,7 @@ case "$*" in
   *core_async_full_buffer_alts_readiness.clj*) id=issue-7 ;;
   *core_async_promise_alts_retention.clj*) id=issue-8 ;;
   *core_async_transformed_unblocking_buffers.clj*) id=issue-9 ;;
+  *core_async_optional_transform_truthiness.clj*) id=issue-10 ;;
   *core_async_parking_transducer.clj*) id=issue-21 ;;
   *atomic_reference_cas_identity.clj*) id=issue-23 ;;
   *files_exclusive_create.clj*) id=issue-31 ;;
