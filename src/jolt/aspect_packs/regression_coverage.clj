@@ -55,6 +55,19 @@
 (defn- sha? [value]
   (and (string? value) (boolean (re-matches #"[0-9a-f]{40}" value))))
 
+(defn- repository-coordinate? [value]
+  (when (string? value)
+    (let [[owner repository & extra] (str/split value #"/" -1)]
+      (and (nil? extra)
+           (string? owner)
+           (string? repository)
+           (boolean
+            (re-matches
+             #"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?"
+             owner))
+           (boolean (re-matches #"[A-Za-z0-9_.-]{1,100}" repository))
+           (not (contains? #{"." ".."} repository))))))
+
 (defn- timestamp? [value]
   (and (string? value)
        (try
@@ -211,7 +224,7 @@
                (when-not (and (map? evidence)
                               (= #{:repository :sha :path}
                                  (set (keys evidence)))
-                              (= "casselc/jolt" (:repository evidence))
+                              (repository-coordinate? (:repository evidence))
                               (sha? (:sha evidence))
                               (relative-source-path? (:path evidence)))
                  [(problem :debt/evidence
@@ -254,8 +267,8 @@
        (catalog-problems catalog)
        (when-not (map? coverage)
          [(problem :coverage/type :map coverage)])
-       (when-not (= 1 (:schema safe-coverage))
-         [(problem :coverage/schema 1 (:schema safe-coverage))])
+       (when-not (= 2 (:schema safe-coverage))
+         [(problem :coverage/schema 2 (:schema safe-coverage))])
        (when-not (= coverage-keys (set (keys safe-coverage)))
          [(problem :coverage/keys coverage-keys (set (keys safe-coverage)))])
        (when-not (= "chucklehead-dev/jolt-aspect-packs" (:repository safe-coverage))

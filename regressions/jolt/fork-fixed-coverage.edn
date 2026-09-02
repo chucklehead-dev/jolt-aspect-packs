@@ -1,11 +1,76 @@
-{:schema 1
+{:schema 2
  :repository "chucklehead-dev/jolt-aspect-packs"
  :label "status:fixed-in-fork"
- :captured-at "2026-08-31T02:37:07Z"
+ :captured-at "2026-09-02T01:16:47Z"
  :fork-fixed-issues
- [18 21 22 23 25 26 30 31 32 33 34 35 36 41 43 44 45 46 49 50 51 52 55]
+ [2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 21 22 25 26 30 31 32 33 34 41 43 44 45 46 49 50 51 55 57 59 62 63 65 66 67]
  :known-missing
- [{:issue 18
+ [{:issue 2
+   :reason "Extract the randomized alts traversal witness as a portable regression."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/async-alts-order-test.ss"}}
+  {:issue 4
+   :reason "Extract promise-chan transducer and handler preservation."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 5
+   :reason "Extract fulfilled transformed promise put progress and stepping."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 6
+   :reason "Extract native alts promise-put transformation behavior."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 7
+   :reason "Extract full transformed fixed-buffer alts readiness."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 8
+   :reason "Extract retained promise value behavior for pending alts takers."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 9
+   :reason "Extract transformed dropping and sliding buffer progress."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 10
+   :reason "Extract Clojure truthiness for optional channel transforms."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 11
+   :reason "Extract unhandled transducer error reporting and completion."
+   :evidence {:repository "casselc/jolt"
+              :sha "a4e5747344947163cc3d717e476795ad8f153376"
+              :path "test/chez/unit.edn"}}
+  {:issue 12
+   :reason "Extract fixed-point pruning of inactive alts registrations."
+   :evidence {:repository "casselc/jolt"
+              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+              :path "test/chez/unit.edn"}}
+  {:issue 13
+   :reason "Package the atomic rendezvous pair ownership proof as a portable regression."
+   :evidence {:repository "casselc/jolt"
+              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+              :path "test/formal/core-async-pair-ownership.smt2"}}
+  {:issue 14
+   :reason "Extract unified pending waiter ownership across public APIs."
+   :evidence {:repository "casselc/jolt"
+              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+              :path "test/chez/unit.edn"}}
+  {:issue 15
+   :reason "Package transformed close/drain conservation as a portable regression."
+   :evidence {:repository "casselc/jolt"
+              :sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+              :path "test/formal/core-async-close-drain.smt2"}}
+  {:issue 18
    :reason "Extract the fiber-safe lazy realization witness."
    :evidence {:repository "casselc/jolt"
               :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
@@ -40,11 +105,6 @@
    :evidence {:repository "casselc/jolt"
               :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
               :path "test/chez/tagged-method-registration-test.clj"}}
-  {:issue 35
-   :reason "Add the atomic delta-conversion public witness."
-   :evidence {:repository "casselc/jolt"
-              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
-              :path "test/chez/atomic-numeric-test.ss"}}
   {:issue 41
    :reason "Package the cross-target managed-library build witness."
    :evidence {:repository "casselc/jolt"
@@ -80,8 +140,38 @@
    :evidence {:repository "casselc/jolt"
               :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
               :path "test/chez/ffi-native-error-test.ss"}}
-  {:issue 52
-   :reason "Extract deterministic socket ambient-error classification without aspects."
+  {:issue 57
+   :reason "Package source-built aspect provider namespace loading as a portable build regression."
    :evidence {:repository "casselc/jolt"
-              :sha "924a1d853c52becaae2213f796c09c2c461b06cf"
-              :path "test/chez/socket-test.clj"}}]}
+              :sha "84c0815961e62903be80369327aacf6c7a326b08"
+              :path "test/chez/aspect-build-smoke.sh"}}
+  {:issue 59
+   :reason "Extract dependency-lineage preservation of the library-owned HTTP aspect seam."
+   :evidence {:repository "casselc/http-client"
+              :sha "a42592a690000fcb749f608a94053695e467c836"
+              :path "resources/META-INF/jolt/aspects/http-client-core.edn"}}
+  {:issue 62
+   :reason "Extract the cross-version FFI write-order sentinel and socket structure witness."
+   :evidence {:repository "casselc/jolt-net"
+              :sha "e625840471794819b6e4e73f9b41dc8d4b80a586"
+              :path "test/jolt/net/ffi_test.clj"}}
+  {:issue 63
+   :reason "Extract readiness-synchronized TCP EOF behavior as a portable witness."
+   :evidence {:repository "casselc/jolt-net"
+              :sha "1c2d237d8ea8540bd0779b9fbf403ca66683aea3"
+              :path "test/jolt/net/socket_test.clj"}}
+  {:issue 65
+   :reason "Package atomic runtime-cache publication and concurrent-winner behavior."
+   :evidence {:repository "casselc/jolt"
+              :sha "580640bcb9445be36fa8317ff14a426bebf7c9f0"
+              :path "host/chez/build-smoke.sh"}}
+  {:issue 66
+   :reason "Extract dependency-owned time provider discovery and consumer ownership."
+   :evidence {:repository "chucklehead-dev/time"
+              :sha "2494b21b25cd959573c3e6050cd475e4bf302fdb"
+              :path "deps.edn"}}
+  {:issue 67
+   :reason "Extract the monotonic timeout-scaling gate and quadratic negative control."
+   :evidence {:repository "casselc/jolt"
+              :sha "1fa62d3627263df63f80d7dc688d1f578b7fdb07"
+              :path "test/hotpath_scaling_test.clj"}}]}

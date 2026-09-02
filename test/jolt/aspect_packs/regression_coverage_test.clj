@@ -19,7 +19,7 @@
       :checker {:source :fixture :status :independently-runnable}}}]})
 
 (def manifest
-  {:schema 1
+  {:schema 2
    :repository "chucklehead-dev/jolt-aspect-packs"
    :label "status:fixed-in-fork"
    :captured-at "2026-08-30T00:00:00Z"
@@ -38,6 +38,22 @@
           :live-checked? false}
          (coverage/check catalog manifest)))
   (is (= true (:live-checked? (coverage/check catalog manifest [1 2])))))
+
+(deftest cross-repository-exact-source-provenance-is-supported
+  (let [cross-repo (assoc-in manifest
+                             [:known-missing 0 :evidence :repository]
+                             "chucklehead-dev/time")]
+    (is (= :valid (:status (coverage/check catalog cross-repo))))
+    (doseq [repository ["missing-slash" "/repo" "owner/" "owner/repo/extra"
+                        "owner repo/project" "-owner/repo" "owner-/repo"
+                        "owner/.."]]
+      (is (contains?
+           (codes (coverage/check
+                   catalog
+                   (assoc-in manifest
+                             [:known-missing 0 :evidence :repository]
+                             repository)))
+           :debt/evidence)))))
 
 (deftest newly-fixed-issue-and-dropped-or-stale-debt-fail-closed
   (testing "a live label not represented by the checked snapshot fails"
@@ -180,6 +196,6 @@
         manifest (coverage/read-edn
                   "regressions/jolt/fork-fixed-coverage.edn")]
     (is (= :valid (:status (coverage/check catalog manifest))))
-    (is (= 23 (:fork-fixed (coverage/check catalog manifest))))
-    (is (= 7 (:portable (coverage/check catalog manifest))))
-    (is (= 16 (:known-missing (coverage/check catalog manifest))))))
+    (is (= 40 (:fork-fixed (coverage/check catalog manifest))))
+    (is (= 6 (:portable (coverage/check catalog manifest))))
+    (is (= 34 (:known-missing (coverage/check catalog manifest))))))
