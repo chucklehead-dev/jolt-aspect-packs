@@ -109,4 +109,57 @@
    :manifest "META-INF/jolt/aspects/packs/glimmer-6dab559.edn"
    :scenario "scenarios/glimmer"
    :effect-evidence
-   {:woven "scenarios/glimmer/target/glimmer-aspect-scenario.build/effects.edn"}}}}
+   {:woven "scenarios/glimmer/target/glimmer-aspect-scenario.build/effects.edn"}}
+
+  jolt-lang/jolt-core-async-flow-v0.8.1
+  {:library {:id jolt-lang/jolt
+             :git/url "https://github.com/jolt-lang/jolt.git"
+             :git/sha "9b7683953b444ece2a2e783e8fa46d31177bb476"}
+   :compiler {:id jolt-lang/jolt
+              :git/url "https://github.com/casselc/jolt.git"
+              :git/sha "717eaeef8e9dca3d53045dadcdb8ae6d081500dd"
+              :branch "integration/aspects"
+              :chez "10.4.1"}
+   :required-fix {:ledger 70
+                  :git/sha "b9c9e32ae849c58dda1f797ca71cd988470d1af3"
+                  :integrated-git/sha "021c3b5556ab06997904ca6212ddf7d3f2ba4766"}
+   :source-equivalence
+   {:git/blobs
+    {"stdlib/clojure/core/async/flow.clj"
+     "1fa647672d0473a388718ed612e180624fa585f6"
+     "stdlib/clojure/core/async/flow/impl.clj"
+     "0f022cd5f3b4bed8bc9afacbdaa7771041ed41cf"
+     "stdlib/clojure/core/async/flow/impl/graph.clj"
+     "063661f80e760749b80440999f73425b50fd695c"
+     "stdlib/clojure/core/async/flow/spi.clj"
+     "b7635a39f0836a7bb1be7cafe199bbb3c69f0e0b"}
+    :official-release {:tag "v0.8.1"
+                       :git/sha "51f10a0239096f804a6017f850b7b235ebe40168"}
+    :verified-current-main
+    {:git/sha "c35b3676db07a53f99100455d6acd5b8b3f2fe91"
+     :equivalent-to-library? true}}
+   :surface :clojure.core.async.flow
+   :boundary :application-owned-entry-seams
+   :upstream-source-modified? false
+   :manifest "META-INF/jolt/aspects/packs/core-async-flow-0.1.0.edn"
+   :presets
+   {:observe "META-INF/jolt/instrumentation/packs/core-async-flow-observe.edn"
+    :faults "META-INF/jolt/instrumentation/packs/core-async-flow-faults.edn"}
+   :scenario "scenarios/core-async-flow"
+   :fault-scenario "scenarios/core-async-flow-faults"
+   :plain-scenario "scenarios/core-async-flow-plain"
+   :effect-evidence
+   {:woven "scenarios/core-async-flow/target/core-async-flow-aspect-scenario.build/effects.edn"
+    :faults "scenarios/core-async-flow-faults/target/core-async-flow-fault-scenario.build/effects.edn"
+    :plain "scenarios/core-async-flow-plain/target/core-async-flow-plain-scenario.build/effects.edn"}
+   :coverage
+   #{:core-async-flow/create :core-async-flow/start
+     :core-async-flow/pause :core-async-flow/resume
+     :core-async-flow/ping :core-async-flow/inject :core-async-flow/stop
+     :core-async-flow/describe :core-async-flow/init
+     :core-async-flow/transition :core-async-flow/transform}
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.core-async-flow.provider/aspect-provider}
+    {:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.core-async-flow.faults/aspect-provider}]}}}

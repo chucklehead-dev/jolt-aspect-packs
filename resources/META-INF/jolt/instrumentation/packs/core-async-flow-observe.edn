@@ -1,0 +1,7 @@
+{:schema 1
+ :id :jolt-aspect-packs/core-async-flow-observe
+ :selections
+ [{:resource "META-INF/jolt/aspects/packs/core-async-flow-0.1.0.edn"
+   :consumers
+   [{:provider jolt.aspect-packs.core-async-flow.provider/aspect-provider
+     :roles [:concurrency/flow-lifecycle :concurrency/flow-step]}]}]}

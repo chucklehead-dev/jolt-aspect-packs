@@ -1,0 +1,47 @@
+{:schema 1
+ :library {:id io.github.chucklehead-dev/jolt-aspect-packs-flow-fixture :version "0.1.0"}
+ :aspects
+ [{:id :core-async-flow/create
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/observed-create}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/describe
+   :match {:arity 0 :entry jolt.aspect-packs.scenario.core-async-flow/worker-describe}
+   :advice-role :concurrency/flow-step
+   :expect {:matches 1}}
+  {:id :core-async-flow/init
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/worker-init}
+   :advice-role :concurrency/flow-step
+   :expect {:matches 1}}
+  {:id :core-async-flow/inject
+   :match {:arity 3 :entry jolt.aspect-packs.scenario.core-async-flow/observed-inject}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/pause
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/observed-pause}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/ping
+   :match {:arity 2 :entry jolt.aspect-packs.scenario.core-async-flow/observed-ping}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/resume
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/observed-resume}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/start
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/observed-start}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/stop
+   :match {:arity 1 :entry jolt.aspect-packs.scenario.core-async-flow/observed-stop}
+   :advice-role :concurrency/flow-lifecycle
+   :expect {:matches 1}}
+  {:id :core-async-flow/transform
+   :match {:arity 3 :entry jolt.aspect-packs.scenario.core-async-flow/worker-transform}
+   :advice-role :concurrency/flow-step
+   :expect {:matches 1}}
+  {:id :core-async-flow/transition
+   :match {:arity 2 :entry jolt.aspect-packs.scenario.core-async-flow/worker-transition}
+   :advice-role :concurrency/flow-step
+   :expect {:matches 1}}]}

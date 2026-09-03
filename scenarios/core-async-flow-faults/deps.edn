@@ -1,0 +1,9 @@
+{:paths ["src" "../core-async-flow/src"]
+ :deps
+ {io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/build
+ {:allow-control-aspects true
+  :aspects
+  [{:preset "META-INF/jolt/instrumentation/packs/core-async-flow-faults.edn"}]
+  :aspect-report "target/aspects.edn"}}

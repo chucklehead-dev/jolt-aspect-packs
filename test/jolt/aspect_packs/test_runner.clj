@@ -8,6 +8,7 @@
             [jolt.aspect-packs.core-async.perturbation-test]
             [jolt.aspect-packs.core-async.provider-test]
             [jolt.aspect-packs.core-async.public-invariants-test]
+            [jolt.aspect-packs.core-async-flow.provider-test]
             [jolt.aspect-packs.db.provider-test]
             [jolt.aspect-packs.effect-evidence-test]
             [jolt.aspect-packs.glimmer.provider-test]
@@ -28,6 +29,7 @@
                 'jolt.aspect-packs.core-async.perturbation-test
                 'jolt.aspect-packs.core-async.provider-test
                 'jolt.aspect-packs.core-async.public-invariants-test
+                'jolt.aspect-packs.core-async-flow.provider-test
                 'jolt.aspect-packs.db.provider-test
                 'jolt.aspect-packs.effect-evidence-test
                 'jolt.aspect-packs.glimmer.provider-test
