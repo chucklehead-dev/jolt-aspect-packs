@@ -61,6 +61,22 @@
    [{:id io.github.chucklehead-dev/jolt-aspect-packs
      :provider jolt.aspect-packs.mycelium.provider/aspect-provider}]}
 
+  ;; The same library as the entry above at a later revision: the closed-domain
+  ;; decision surface (samizdat.decide, journal/settle-gate!, journal/
+  ;; record-artifact!) does not exist at ff9cfd8. Keyed by the namespace that
+  ;; carries the surface because a map cannot hold yogthos/samizdat twice; the
+  ;; manifest's :library :id is yogthos/samizdat. No compiled scenario or
+  ;; effect evidence exists for this pack yet, so neither key is claimed.
+  yogthos/samizdat.decide
+  {:git/url "https://github.com/casselc/samizdat.git"
+   :git/sha "4745c96e08a6e0bf4fb2903374849d745a08da3c"
+   :library yogthos/samizdat
+   :seam-revision "71f24e427649a82db96576694f6967c171e72453"
+   :manifest "META-INF/jolt/aspects/packs/experience-71f24e4.edn"
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.experience.provider/aspect-provider}]}
+
   jolt-lang/http-client
  {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"

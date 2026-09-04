@@ -10,6 +10,7 @@
             [jolt.aspect-packs.core-async.public-invariants-test]
             [jolt.aspect-packs.db.provider-test]
             [jolt.aspect-packs.effect-evidence-test]
+            [jolt.aspect-packs.experience.provider-test]
             [jolt.aspect-packs.glimmer.provider-test]
             [jolt.aspect-packs.glitter.provider-test]
             [jolt.aspect-packs.history-test]
@@ -30,6 +31,7 @@
                 'jolt.aspect-packs.core-async.public-invariants-test
                 'jolt.aspect-packs.db.provider-test
                 'jolt.aspect-packs.effect-evidence-test
+                'jolt.aspect-packs.experience.provider-test
                 'jolt.aspect-packs.glimmer.provider-test
                 'jolt.aspect-packs.glitter.provider-test
                 'jolt.aspect-packs.history-test

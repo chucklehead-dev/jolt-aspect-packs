@@ -1,0 +1,29 @@
+{:schema 1
+ :library {:id yogthos/samizdat
+           :version "71f24e427649a82db96576694f6967c171e72453"}
+ :aspects
+ [{:id :samizdat.decide/decision-domain
+   :match {:entry samizdat.decide/authorize
+           :arity 2}
+   :advice-role :samizdat/decision-domain
+   :expect {:matches 1}}
+  {:id :samizdat.decide/candidate-score
+   :match {:entry samizdat.decide/decide
+           :arity 1}
+   :advice-role :samizdat/candidate-score
+   :expect {:matches 1}}
+  {:id :samizdat.decide/transition
+   :match {:entry samizdat.decide/revalidate
+           :arity 3}
+   :advice-role :samizdat/transition
+   :expect {:matches 1}}
+  {:id :samizdat.store.journal/verification
+   :match {:entry samizdat.store.journal/settle-gate!
+           :arity 4}
+   :advice-role :samizdat/verification
+   :expect {:matches 1}}
+  {:id :samizdat.store.journal/artifact
+   :match {:entry samizdat.store.journal/record-artifact!
+           :arity 3}
+   :advice-role :samizdat/artifact
+   :expect {:matches 1}}]}
