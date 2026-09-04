@@ -65,14 +65,23 @@
   ;; decision surface (samizdat.decide, journal/settle-gate!, journal/
   ;; record-artifact!) does not exist at ff9cfd8. Keyed by the namespace that
   ;; carries the surface because a map cannot hold yogthos/samizdat twice; the
-  ;; manifest's :library :id is yogthos/samizdat. No compiled scenario or
-  ;; effect evidence exists for this pack yet, so neither key is claimed.
+  ;; manifest's :library :id is yogthos/samizdat. The compiler is the canonical
+  ;; integration/aspects tip, which post-dates the 04a543a2 pin the other
+  ;; entries record (that commit is not reachable from casselc/jolt any more).
   yogthos/samizdat.decide
   {:git/url "https://github.com/casselc/samizdat.git"
    :git/sha "4745c96e08a6e0bf4fb2903374849d745a08da3c"
    :library yogthos/samizdat
+   :compiler {:id casselc/jolt
+              :git/sha "717eaeef8e9dca3d53045dadcdb8ae6d081500dd"
+              :chez "10.4.1"}
    :seam-revision "71f24e427649a82db96576694f6967c171e72453"
    :manifest "META-INF/jolt/aspects/packs/experience-71f24e4.edn"
+   :scenario "scenarios/experience"
+   :plain-scenario "scenarios/experience-plain"
+   :effect-evidence
+   {:woven "scenarios/experience/target/experience-aspect-scenario.build/effects.edn"
+    :plain "scenarios/experience-plain/target/experience-plain-scenario.build/effects.edn"}
    :consumers
    [{:id io.github.chucklehead-dev/jolt-aspect-packs
      :provider jolt.aspect-packs.experience.provider/aspect-provider}]}

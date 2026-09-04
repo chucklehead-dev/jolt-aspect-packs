@@ -6,7 +6,7 @@ define assert-effect-report
 	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
 endef
 
-.PHONY: test checkpoint-replay-proof checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
+.PHONY: test checkpoint-replay-proof checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke experience-aspect-smoke experience-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
 
 test: checkpoint-replay-proof
 	$(JOLT) -M:test
@@ -114,7 +114,7 @@ glimmer-source-test:
 http-server-source-test:
 	$(JOLT) -M:http-server-conformance
 
-aspect-smoke: core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+aspect-smoke: core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke experience-aspect-smoke experience-plain-smoke
 
 core-async-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -243,6 +243,28 @@ mycelium-plain-smoke:
 	    -o target/mycelium-plain-scenario
 	@scenarios/mycelium-plain/target/mycelium-plain-scenario plain
 	$(call assert-effect-report,scenarios/mycelium-plain/target/mycelium-plain-scenario.build/effects.edn,plain)
+
+experience-aspect-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/experience && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.experience \
+	    -o target/experience-aspect-scenario
+	@scenarios/experience/target/experience-aspect-scenario
+	$(call assert-effect-report,scenarios/experience/target/experience-aspect-scenario.build/effects.edn,woven,scenarios/experience/target/aspects.edn)
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"]}' \
+	  -m jolt.aspect-packs.experience.report-test \
+	  scenarios/experience/target/aspects.edn
+
+experience-plain-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/experience-plain && \
+	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.experience \
+	    -o target/experience-plain-scenario
+	@scenarios/experience-plain/target/experience-plain-scenario plain
+	$(call assert-effect-report,scenarios/experience-plain/target/experience-plain-scenario.build/effects.edn,plain)
 
 db-source-test:
 	$(JOLT) -M:db-conformance

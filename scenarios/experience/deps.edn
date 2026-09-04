@@ -1,0 +1,12 @@
+{:paths ["src"]
+ :deps
+ {io.github.casselc/samizdat
+  {:git/url "https://github.com/casselc/samizdat.git"
+   :git/sha "4745c96e08a6e0bf4fb2903374849d745a08da3c"}
+  io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/build
+ {:aspects
+  [{:resource "META-INF/jolt/aspects/packs/experience-71f24e4.edn"
+    :provider jolt.aspect-packs.experience.provider/aspect-provider}]
+  :aspect-report "target/aspects.edn"}}

@@ -129,7 +129,7 @@
                    :entropy (:entropy record)
                    :n-offered (:n-offered record)
                    :n-scored (:n-scored record)
-                   :model-state-id (get-in record [:prov :model-state-id])}]
+                   :model-state-id (get-in record [:provenance :model-state-id])}]
       (when-not (and (contains? decisions (:decision summary))
                      (identifier? (:reason summary))
                      (identifier? (:selected summary))

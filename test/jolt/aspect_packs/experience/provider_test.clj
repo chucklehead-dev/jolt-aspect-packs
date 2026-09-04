@@ -58,7 +58,7 @@
   {:decision :act :reason :reason/clear-winner :selected :continue
    :margin 2.2 :entropy 0.1 :n-offered 2 :n-scored 2
    :domain [{:id :continue :score -0.1} {:id :block :score -2.3}]
-   :prov {:scorer-id "scorer-a" :model-state-id "ms-77"}})
+   :provenance {:scorer-id "scorer-a" :model-state-id "ms-77"}})
 
 (defn- run-with-journal [journal advice jp args value]
   (binding [history/*journal* journal history/*context-id* :turn-7]

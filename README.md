@@ -90,9 +90,10 @@ compatibility revision `71f24e427649a82db96576694f6967c171e72453`: the DecisionD
 authorization, the candidate scoring, the apply-time revalidation, gate
 settlement and machine-checked artifacts. It records identifiers, counts,
 margins, entropy and outcomes and never the vocabulary, the scorer, its
-scores, prompts, tokens, claims, code, witnesses or connections. It has a
-provider and manifest contract test but no compiled scenario yet. See
-[the experience pack notes](docs/experience.md).
+scores, prompts, tokens, claims, code, witnesses or connections. Its woven and
+plain scenarios compile the real Samizdat decision path at `canonical` and
+pass the effect and aspect report gates under the canonical fork compiler.
+See [the experience pack notes](docs/experience.md).
 
 The core.async pack is the first runtime-concurrency experiment. It externally
 wraps fixed-buffer `offer!`, `poll!`, and `close!` call sites, records opaque

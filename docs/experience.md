@@ -50,8 +50,36 @@ JOLT_CACHE_DIR=/tmp/jolt-aspect-packs-experience-cache \
    (clojure.test/run-tests 'jolt.aspect-packs.experience.provider-test)"
 ```
 
-The test does not need the native Hegel library. Compiled woven and plain
-scenarios for this pack, and the effect evidence the central contract
-requires of them, are not yet built: Samizdat's experience surface has no
-scenario under `scenarios/` and `targets.edn` records the pack without
-`:scenario` or `:effect-evidence` until one exists.
+The test does not need the native Hegel library.
+
+Compiled scenarios exist for both shapes and are the pack's effect evidence:
+
+```sh
+make experience-aspect-smoke experience-plain-smoke \
+  JOLT_ASPECT_JOLT=/absolute/path/to/aspect-capable/jolt
+```
+
+`scenarios/experience` pins `casselc/samizdat` at
+`4745c96e08a6e0bf4fb2903374849d745a08da3c` (the revision carrying the seam
+pin) and weaves this pack; `scenarios/experience-plain` compiles the same
+program without it. The scenario opens an in-memory Samizdat store, writes
+the run row the journal's foreign keys need (directly, not through
+`runs/start-run!`, which reads the retention policy from userspace and so
+needs embedded resources a scenario does not carry), authorizes a
+three-candidate single-token vocabulary with one illegal entry, scores it,
+revalidates the outcome once stale and once fresh, records and settles a
+gate firing, and records an artifact. Woven, it asserts twelve history
+events in the expected order, the bounded domain coordinate, the decision
+summary with the model state id, the two version comparisons, and the
+absence of every private string and per-candidate score; plain, it asserts
+an empty history. Both builds then pass the shared effect-report gate and
+the woven build the aspect-report gate (`experience.report-test`: five
+aspects, each matched at exactly one site, library `yogthos/samizdat` at the
+seam revision).
+
+Verified with the canonical aspect compiler `casselc/jolt:integration/aspects`
+at `717eaeef8e9dca3d53045dadcdb8ae6d081500dd` built with Chez Scheme 10.4.1:
+woven 2584 effect subjects, plain 2536, both green. The scenario needs
+`canonical` or later: the Mycelium scenario's samizdat pin (`ff9cfd8c`)
+predates the RFC 0014 `:jolt/provides` pin bumps and does not build under a
+0.8.1 compiler.
