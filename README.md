@@ -94,6 +94,14 @@ callback operations, `alts!`, and CPS-lowered `go` parks until their distinct
 observation contracts are modeled. See
 [the core.async pack notes](docs/core-async.md).
 
+The core.async.flow pack instruments application-owned lifecycle wrappers and
+the four functions supplied to `flow/map->step`; upstream flow source remains
+unchanged. Observation records bounded structural history without message or
+state values. A separate, explicitly enabled control preset composes exact
+operation-scoped faults outside that history provider. Woven observation,
+faulted, and plain standalone binaries all carry compiler effect evidence. See
+[the core.async.flow pack notes](docs/core-async-flow.md).
+
 Run the provider and manifest contract tests with Jolt v0.7.28 or newer:
 
 ```sh

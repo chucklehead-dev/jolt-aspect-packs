@@ -1,0 +1,14 @@
+{:paths ["src"]
+ :deps
+ {io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}
+ :jolt/aspects
+ {:library
+  {:id io.github.chucklehead-dev/jolt-aspect-packs-flow-fixture
+   :version "0.1.0"}
+  :namespaces [jolt.aspect-packs.scenario.core-async-flow]
+  :manifest "../../resources/META-INF/jolt/aspects/packs/core-async-flow-0.1.0.edn"}
+ :jolt/build
+ {:aspects
+  [{:preset "META-INF/jolt/instrumentation/packs/core-async-flow-observe.edn"}]
+  :aspect-report "target/aspects.edn"}}

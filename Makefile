@@ -6,7 +6,7 @@ define assert-effect-report
 	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
 endef
 
-.PHONY: test checkpoint-replay-proof checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
+.PHONY: test checkpoint-replay-proof checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke core-async-flow-aspect-smoke core-async-flow-fault-smoke core-async-flow-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
 
 test: checkpoint-replay-proof
 	$(JOLT) -M:test
@@ -114,7 +114,7 @@ glimmer-source-test:
 http-server-source-test:
 	$(JOLT) -M:http-server-conformance
 
-aspect-smoke: core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
+aspect-smoke: core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke core-async-flow-aspect-smoke core-async-flow-fault-smoke core-async-flow-plain-smoke db-aspect-smoke db-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke
 
 core-async-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
@@ -150,6 +150,44 @@ core-async-plain-smoke:
 	    -o target/core-async-plain-scenario
 	@scenarios/core-async-plain/target/core-async-plain-scenario plain
 	$(call assert-effect-report,scenarios/core-async-plain/target/core-async-plain-scenario.build/effects.edn,plain)
+
+core-async-flow-aspect-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/core-async-flow && \
+	  "$(JOLT_ASPECT_JOLT)" build \
+	    -m jolt.aspect-packs.scenario.core-async-flow \
+	    -o target/core-async-flow-aspect-scenario
+	@scenarios/core-async-flow/target/core-async-flow-aspect-scenario
+	$(call assert-effect-report,scenarios/core-async-flow/target/core-async-flow-aspect-scenario.build/effects.edn,woven,scenarios/core-async-flow/target/aspects.edn)
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"]}' \
+	  -m jolt.aspect-packs.core-async-flow.report-test \
+	  scenarios/core-async-flow/target/aspects.edn
+
+core-async-flow-fault-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/core-async-flow-faults && \
+	  "$(JOLT_ASPECT_JOLT)" build \
+	    -m jolt.aspect-packs.scenario.core-async-flow-faults \
+	    -o target/core-async-flow-fault-scenario
+	@scenarios/core-async-flow-faults/target/core-async-flow-fault-scenario
+	$(call assert-effect-report,scenarios/core-async-flow-faults/target/core-async-flow-fault-scenario.build/effects.edn,woven,scenarios/core-async-flow-faults/target/aspects.edn)
+	@"$(JOLT_ASPECT_JOLT)" -Srepro \
+	  -Sdeps '{:paths ["test" "src"]}' \
+	  -m jolt.aspect-packs.core-async-flow.fault-report-test \
+	  scenarios/core-async-flow-faults/target/aspects.edn
+
+core-async-flow-plain-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/core-async-flow-plain && \
+	  "$(JOLT_ASPECT_JOLT)" build \
+	    -m jolt.aspect-packs.scenario.core-async-flow \
+	    -o target/core-async-flow-plain-scenario
+	@scenarios/core-async-flow-plain/target/core-async-flow-plain-scenario plain
+	$(call assert-effect-report,scenarios/core-async-flow-plain/target/core-async-flow-plain-scenario.build/effects.edn,plain)
 
 db-aspect-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \

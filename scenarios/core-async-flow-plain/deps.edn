@@ -1,0 +1,4 @@
+{:paths ["../core-async-flow/src"]
+ :deps
+ {io.github.chucklehead-dev/jolt-aspect-packs
+  {:local/root "../.."}}}
