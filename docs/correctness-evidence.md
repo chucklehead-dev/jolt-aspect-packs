@@ -27,6 +27,62 @@ Issues fixed only on a user or organization fork remain open with status
 resolved, including an explicit decision not to upstream. Creating or updating
 this ledger does not authorize an upstream pull request.
 
+## Upstream submission discipline
+
+Before calling a fix upstream-ready, inspect its semantic neighborhood rather
+than only the reported operation. Record the owning abstraction and every
+modeled implementer; sibling methods and overloads that share its contract;
+result values, exception type and exact message, and validation/effect order;
+and the focused unit and JVM/reference-runtime differential rows that cover
+that surface.
+An explicit evidence-backed `not applicable` is acceptable. An unperformed
+neighborhood search is not.
+
+If the fix introduces or moves a helper onto a shared I/O, dispatch,
+allocation, locking, or compiler path, characterize caller frequency and retain
+base/candidate timings with the same stable workload. Use a monotonic clock and
+a regression-sensitive negative control. A green correctness suite does not
+establish that a newly shared seam is cheap enough.
+
+Before publication, search source, tests, documentation, issue text, and the
+current unreleased changelog for the old limitation, error spelling, divergence
+rationale, version literal, and issue identifier. Resolve or explicitly retain
+every match. Versions used by executable oracles must have one committed source
+of truth, and changelog entries must target the currently verified unreleased
+section rather than a previously cut release.
+
+For each upstream submission, keep four identities in the ledger:
+
+1. the submitted and independently reviewed head;
+2. the maintainer's final PR head, including substantive follow-up commits;
+3. GitHub's recorded merge commit; and
+4. the commit currently carrying the patch on upstream `main`, verified by
+   ancestry or patch identity after any history rewrite.
+
+Do not treat the PR API's merge SHA as permanent ancestry proof. Recheck the
+fourth identity when refreshing a target or closing its ledger issue. Separate
+mechanical branch-sync merges from substantive maintainer changes and record
+the latter as feedback on the reproducer, implementation, tests, or prose.
+
+Serialize a batch of PRs that edit the same release notes or nearby source.
+After the first merges, refresh the next branch, rerun its exact-tip gates, and
+update its reviewed head before submission. Preserve meaningful reproducer and
+fix commits when upstream benefits from them, but fold purely corrective noise
+before asking a maintainer to review the branch.
+
+These checks were reinforced by the September 2026 upstream follow-ups: Jolt
+[#854](https://github.com/jolt-lang/jolt/pull/854) extended a `toArray` fix from
+one list to the full modeled `Collection` neighborhood; Jolt
+[#853](https://github.com/jolt-lang/jolt/pull/853) brought adjacent string
+comparison contracts under the same oracle; and Jolt
+[#710](https://github.com/jolt-lang/jolt/pull/710) repaired a shared-path
+performance regression before merge. Post-merge commits
+[`484e6283`](https://github.com/jolt-lang/jolt/commit/484e6283f256c6301f4d32aed55a33bfeccb9b29)
+and
+[`51f10a02`](https://github.com/jolt-lang/jolt/commit/51f10a0239096f804a6017f850b7b235ebe40168)
+show why propagation closure, current-main identity, and release placement are
+part of correctness rather than optional cleanup.
+
 ## Formal-model anti-vacuity
 
 Every SMT model used as correctness evidence must have a machine-readable

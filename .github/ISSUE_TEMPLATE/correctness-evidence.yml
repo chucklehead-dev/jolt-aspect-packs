@@ -54,6 +54,12 @@ body:
       required: true
 
   - type: textarea
+    id: semantic-neighborhood
+    attributes:
+      label: Semantic neighborhood and hot-path risk
+      description: Before marking this upstream-ready, list owning abstractions, modeled implementers, sibling methods or overloads, exact error and effect-order contracts, and JVM/reference-runtime differential coverage. If a shared hot path changes, include caller frequency and stable base/candidate timing; otherwise give an evidence-backed not-applicable reason. This may remain pending while status is Observed.
+
+  - type: textarea
     id: fix
     attributes:
       label: Fix commits
@@ -66,9 +72,15 @@ body:
       description: Record exact commands, totals, platforms, and independent review outcome.
 
   - type: textarea
+    id: upstream-provenance
+    attributes:
+      label: Upstream provenance
+      description: As they become available, record the reviewed submitted head, maintainer final head and substantive changes, GitHub merge SHA, and current-main commit verified by ancestry or patch identity. Distinguish mechanical sync merges.
+
+  - type: textarea
     id: gaps
     attributes:
       label: Remaining gaps and upstream disposition
-      description: State what is still unproved, the intended upstream repository, and whether upstream work is authorized.
+      description: State what is still unproved, the intended upstream repository, whether upstream work is authorized, and propagation-closure results for stale limitations, error text, divergence reasons, versions, issue references, and changelog placement.
     validations:
       required: true
