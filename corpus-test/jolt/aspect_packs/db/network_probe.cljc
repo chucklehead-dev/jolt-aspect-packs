@@ -13,7 +13,13 @@
        (try
          ;; This is the selected runtime's native HTTPS path, not curl or a
          ;; subprocess. The fixed public POM is only a reachability control.
-         (boolean (http/fetch probe-url (.getPath file)))
+         (let [result (http/fetch* probe-url (.getPath file))]
+           ;; Preserve the public transport's failure classification. A failed
+           ;; positive control is an environment/API failure, never evidence
+           ;; that the firewall worked. The endpoint is fixed public data.
+           (when-not (= :ok (:outcome result))
+             (println "Network probe transport:" (pr-str result)))
+           (= :ok (:outcome result)))
          (finally (.delete file))))
      :clj
      (try
