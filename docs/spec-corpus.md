@@ -1,10 +1,12 @@
 # Declarative spec corpus: db pilot
 
 Status: Phase 3b contract for [roadmap #69](https://github.com/chucklehead-dev/jolt-aspect-packs/issues/69).
-This branch implements the live-generation and baked-fixture consumers against
+The live-generation and baked-fixture consumers use
 Hegel `88cc32cc3c39cb445fa16f725ff5f9c1db115858` (merged PR86).
-Cross-platform integration CI and final independent review are still required;
-local tests alone do not establish completion of this contract.
+The implementation and cross-platform evidence are tracked in
+[PR93](https://github.com/chucklehead-dev/jolt-aspect-packs/pull/93).
+Every change retains the review and CI gates below; local tests alone do not
+establish cross-platform support.
 
 ## One model, two modes
 
@@ -178,21 +180,37 @@ actual model/fixture verdict while restricted, and successful access afterward:
 The network probe is a separate explicit command, never a consumer dependency.
 It uses each selected runtime's HTTPS implementation, not a curl subprocess.
 Live JVM tests pin Clojure 1.12.3 and reject a supplied version that differs from
-the running runtime. Windows/macOS isolation remains an unverified integration
-gate until actual CI records the controls and corpus verdict on those hosts.
+the running runtime. Released Jolt 0.8.1's Windows stream constructors do not
+recognize drive-qualified paths correctly; the test-only HTTPS probe therefore
+uses a unique relative temporary file and cleans both it and its `.part` sibling.
+This compatibility choice does not change the baked corpus or its loader.
 
-### Remaining acceptance gates
+### Verified implementation and continuing gates
+
+At implementation commit `db336477240b8cdf0c3ea714dfc918652e8eddff`, the
+[nine-row corpus workflow](https://github.com/chucklehead-dev/jolt-aspect-packs/actions/runs/33983232656)
+passed BB 1.13.220, Jolt 0.8.1 and JVM Clojure 1.12.3 on Linux x86_64,
+Windows x86_64 and macOS arm64. Every row recorded the positive/blocked/restored
+network controls, four complete baked histories with 7 tests/48 assertions
+under restriction, and 8 tests/67 live assertions after native installation.
+The live JVM version pin is separate from the engine-free JVM CLI's default
+Clojure version. Experimental jank/CLR are not covered by this corpus matrix.
+The [formal-evidence workflow](https://github.com/chucklehead-dev/jolt-aspect-packs/actions/runs/33983232646)
+also passed. This records an exact tested implementation, not an automatic
+acceptance of later commits or a substitute for compiler/provider evidence.
 
 - [x] Final Hegel corpus API/transport and digest provider reviewed and pinned (PR86).
-- [x] Db generator, witness families and exact valid-case policy exercised locally on BB/JVM/Jolt.
+- [x] Db generator, witness families and exact valid-case policy exercised across the nine-host matrix.
 - [x] Separate Mode A and Mode B commands/aliases with explicit dependencies.
-- [x] Independently pinned fixture/manifest; stale and digest mutants exercised locally.
-- [x] All required witness and semantic/privacy controls reach their intended gate locally.
-- [ ] Offline libhegel-free transfer gate on supported hosts; platform scope recorded.
+- [x] Independently pinned fixture/manifest; stale and digest mutants exercised.
+- [x] All required witness and semantic/privacy controls reach their intended gate.
+- [x] Offline libhegel-free transfer gate on supported hosts; platform scope recorded above.
 - [x] Coordinated model/seam/Hegel pins and fixture revisions with drift tests.
-- [ ] Root review, independent local Claude review and applicable CI before merge.
+- Every subsequent change requires root review, independent local Claude review
+  and applicable CI before merge; PR93 records the implementation review trail.
 
 Selective typing may reuse Hegel #73's eventual manifest/event contracts. It
 remains optional development tooling, not a replacement for these checks or a
-runtime prerequisite for either mode. Completion of this contract document alone
-does not close roadmap #69, the Phase 4 obligations, or Hegel #56.
+runtime prerequisite for either mode. This pilot does not close roadmap #69 or
+the Phase 4 obligations. The underlying Hegel API was delivered separately in
+Hegel #56/PR86.
