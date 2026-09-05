@@ -86,6 +86,23 @@
   [journal]
   (:events (journal-call journal :read)))
 
+(defn event-envelope
+  "Snapshot a closed journal with its declared operation-event profile.
+
+  The identity is producer metadata, not a claim that Hegel validation ran.
+  Consumers explicitly call hegel.event-contract/check-envelope! before their
+  domain model. Quiesce workers first: later operations are not in this snapshot.
+  Payload privacy and byte limits remain the capturing pack's responsibility."
+  [journal]
+  (let [snapshot (journal-call journal :read)
+        open-ids (-> snapshot :open-operations keys sort vec)]
+    (when (seq open-ids)
+      (throw (ex-info "history journal has open operations"
+                      {:kind :history/open-operations :operation-ids open-ids})))
+    {:contract-id "hegel.operation-events"
+     :contract-revision "1"
+     :events (:events snapshot)}))
+
 (defn open-operation-ids
   "Return currently open operation ids for bounded teardown diagnostics."
   [journal]

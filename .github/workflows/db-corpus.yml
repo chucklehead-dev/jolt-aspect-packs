@@ -100,6 +100,24 @@ jobs:
 
       # Provision dependencies explicitly before the network-disabled checks.
       # No libhegel install occurs until baked consumption has passed.
+      - name: Check canonical event producer and profile (BB, no native engine)
+        if: matrix.host == 'bb'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-event-contract-engine
+        run: bb --config event-contract-bb.edn -m jolt.aspect-packs.event-contract-runner
+
+      - name: Check canonical event producer and profile (Jolt, no native engine)
+        if: matrix.host == 'jolt'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-event-contract-engine
+        run: jolt -M:event-contract
+
+      - name: Check canonical event producer and profile (JVM, no native engine)
+        if: matrix.host == 'jvm'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-event-contract-engine
+        run: clojure -M:event-contract
+
       - name: Provision BB dependency
         if: matrix.host == 'bb'
         run: bb --config corpus-bb.edn -e 'nil'

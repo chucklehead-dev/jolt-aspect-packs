@@ -1,0 +1,5 @@
+{:paths ["src" "resources" "test"]
+ :deps
+ {io.github.chucklehead-dev/jolt-hegel
+  {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
+   :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}}

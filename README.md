@@ -41,6 +41,19 @@ compose the shared `hegel.trace` and `hegel.history` rules.
 Library-specific redaction, semantic roles, advice, tests, and model rules stay
 under that library's namespace.
 
+After workers are quiescent, `history/event-envelope` takes one closed-journal
+snapshot declaring `hegel.operation-events` revision `1`. It does not load Hegel
+or claim semantic validation: explicitly call
+`hegel.event-contract/check-envelope!` before your domain model. Open operations
+are rejected; later journal operations are outside the immutable snapshot.
+The profile checks complete lifecycles, contiguous sequences, causal links and
+context. It does not redact payloads or prove linearizability. Generic legacy
+traces keep their existing APIs. The pure `:event-contract` alias (or
+`event-contract-bb.edn`) tests actual producer events and stale-header/malformed
+controls on the existing BB/JVM/Jolt three-platform CI matrix without libhegel.
+The test/conformance pins track the merged profile; independent db corpus
+provenance and its existing dependency/setup-action pins remain unchanged.
+
 ## Current pack
 
 The first pack targets the `jolt-lang/http-client` library identity at
