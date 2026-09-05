@@ -7,9 +7,11 @@
 
 (defn- reachable? []
   #?(:jolt
-     (let [directory (java.io.File. (or (System/getenv "RUNNER_TEMP")
-                                       (System/getProperty "java.io.tmpdir")))
-           file (java.io.File/createTempFile "db-corpus-network-" ".pom" directory)]
+     ;; Released Jolt 0.8.1 stream constructors resolve Windows drive-qualified
+     ;; paths as project-relative. Use a unique relative file in this explicit
+     ;; CLI's working directory, not /tmp or a drive-qualified runner path.
+     (let [file (java.io.File/createTempFile ".db-corpus-network-" ".pom"
+                                            (java.io.File. "."))]
        (try
          ;; This is the selected runtime's native HTTPS path, not curl or a
          ;; subprocess. The fixed public POM is only a reachability control.
@@ -20,7 +22,9 @@
            (when-not (= :ok (:outcome result))
              (println "Network probe transport:" (pr-str result)))
            (= :ok (:outcome result)))
-         (finally (.delete file))))
+         (finally
+           (.delete file)
+           (.delete (java.io.File. (str (.getPath file) ".part"))))))
      :clj
      (try
        (let [^java.net.URLConnection connection (.openConnection (java.net.URL. probe-url))]
