@@ -1,0 +1,162 @@
+name: Db corpus
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-corpus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  corpus:
+    name: Corpus / ${{ matrix.host }} / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [bb, jolt, jvm]
+        platform:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            shell: bash
+            bb-asset: babashka-1.13.220-linux-amd64.tar.gz
+            bb-sha: 5211ebf6267be2dbbf4857611cb01331b865bf6b0a8c9bc500c83a816df1a769
+            jolt-asset: jolt-v0.8.1-x86_64-linux.tar.gz
+            jolt-sha: ddca03c95190a8079c3674482187782796031cf0de685ee29411f08481bc440c
+          - name: Windows x86_64
+            runner: windows-2022
+            shell: pwsh
+            bb-asset: babashka-1.13.220-windows-amd64.zip
+            bb-sha: baf87302db04377d44f10dd1cb5c29924fc418d5765dc149213e793be5de0e9e
+            jolt-asset: jolt-v0.8.1-x86_64-windows.zip
+            jolt-sha: 352868932cb98caf33085ebff89fbbf6abc3d32ad9eba0bf6a8f2f0faee7b3f5
+          - name: macOS arm64
+            runner: macos-14
+            shell: bash
+            bb-asset: babashka-1.13.220-macos-aarch64.tar.gz
+            bb-sha: f7d18c3ab11bb4ad0e32a45c1ae40ae25911d5fa06ba4ded07cb90b8af158077
+            jolt-asset: jolt-v0.8.1-aarch64-macos.tar.gz
+            jolt-sha: 0d7744da0133fa1a69886b0d04da41ee88bfa17be59506afe0b66fea8d1a88a6
+    defaults:
+      run:
+        shell: ${{ matrix.platform.shell }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Isolate native and Jolt caches
+        shell: bash
+        run: |
+          echo "HEGEL_CACHE_DIR=$RUNNER_TEMP/db-corpus-native" >> "$GITHUB_ENV"
+          echo "JOLT_CACHE_DIR=$RUNNER_TEMP/db-corpus-jolt-cache" >> "$GITHUB_ENV"
+
+      - name: Provision macOS OpenSSL
+        if: matrix.host == 'jolt' && runner.os == 'macOS'
+        run: brew install openssl@3
+
+      - name: Make Windows libffi discoverable
+        if: matrix.host == 'bb' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $mingw = Join-Path $env:ProgramFiles 'Git\mingw64\bin'
+          if (-not (Test-Path -LiteralPath (Join-Path $mingw 'libffi-8.dll'))) {
+            throw 'Git for Windows libffi-8.dll is required'
+          }
+          $mingw | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Provision pinned Babashka
+        if: matrix.host == 'bb'
+        uses: chucklehead-dev/jolt-hegel/.github/actions/setup-babashka@88cc32cc3c39cb445fa16f725ff5f9c1db115858
+        with:
+          version: 1.13.220
+          asset: ${{ matrix.platform.bb-asset }}
+          sha256: ${{ matrix.platform.bb-sha }}
+
+      - name: Provision pinned Jolt
+        if: matrix.host == 'jolt'
+        uses: chucklehead-dev/jolt-hegel/.github/actions/setup-jolt@88cc32cc3c39cb445fa16f725ff5f9c1db115858
+        with:
+          version: 0.8.1
+          asset: ${{ matrix.platform.jolt-asset }}
+          sha256: ${{ matrix.platform.jolt-sha }}
+
+      - uses: actions/setup-java@v6
+        if: matrix.host == 'jvm'
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: DeLaGuardo/setup-clojure@13.5
+        if: matrix.host == 'jvm'
+        with:
+          cli: latest
+
+      # Provision dependencies explicitly before the network-disabled checks.
+      # No libhegel install occurs until baked consumption has passed.
+      - name: Provision BB dependency
+        if: matrix.host == 'bb'
+        run: bb --config corpus-bb.edn -e 'nil'
+      - name: Provision Jolt dependency
+        if: matrix.host == 'jolt'
+        run: jolt -P -M:db-corpus-offline
+      - name: Provision JVM dependency
+        if: matrix.host == 'jvm'
+        run: clojure -P -M:db-corpus-offline
+
+      - name: Verify baked fixture and mutants without libhegel (BB)
+        if: matrix.host == 'bb'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-db-corpus-engine
+        run: bb --config corpus-bb.edn corpus-offline
+      - name: Verify baked fixture and mutants without libhegel (Jolt)
+        if: matrix.host == 'jolt'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-db-corpus-engine
+        run: jolt -M:db-corpus-offline
+      - name: Verify baked fixture and mutants without libhegel or FFI alias (JVM)
+        if: matrix.host == 'jvm'
+        env:
+          HEGEL_LIBHEGEL_LIBRARY: deliberately-missing-db-corpus-engine
+        run: clojure -M:db-corpus-offline
+
+      - name: Deny networking for baked fixture and mutant checks (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        timeout-minutes: 3
+        env:
+          CORPUS_HOST: ${{ matrix.host }}
+        run: bash tools/check-db-corpus-offline.sh "$CORPUS_HOST"
+
+      - name: Deny runtime networking for baked fixture and mutant checks (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        timeout-minutes: 3
+        env:
+          CORPUS_HOST: ${{ matrix.host }}
+        run: ./tools/check-db-corpus-offline.ps1 -CorpusHost $env:CORPUS_HOST
+
+      - name: Provision libhegel (BB)
+        if: matrix.host == 'bb'
+        run: bb --config corpus-bb.edn -m hegel.install
+      - name: Run live generation controls (BB)
+        if: matrix.host == 'bb'
+        run: bb --config corpus-bb.edn corpus-live-test 1.13.220
+      - name: Provision libhegel (Jolt)
+        if: matrix.host == 'jolt'
+        run: jolt -M:db-corpus-live:db-corpus-setup
+      - name: Run live generation controls (Jolt)
+        if: matrix.host == 'jolt'
+        run: jolt -M:db-corpus-live:db-corpus-live-test 0.8.1
+      - name: Provision libhegel (JVM)
+        if: matrix.host == 'jvm'
+        run: clojure -J--enable-native-access=ALL-UNNAMED -M:db-corpus-live:db-corpus-jvm:db-corpus-setup
+      - name: Run live generation controls (JVM)
+        if: matrix.host == 'jvm'
+        run: clojure -J--enable-native-access=ALL-UNNAMED -M:db-corpus-live:db-corpus-jvm:db-corpus-live-test 1.12.3

@@ -1,0 +1,2 @@
+# The corpus model revision hashes the source bytes on every supported host.
+models/jolt/aspect_packs/db/model.clj text eol=lf
