@@ -1,4 +1,4 @@
-{:spec "test/fixtures/formal-antivacuity/independent.smt2"
+{:spec "test/fixtures/formal-antivacuity/vacuous-boundary.smt2"
  :reference {:predicate "reference-valid"
              :implementation-result "implementation-accept"
              :violation "disagreement"

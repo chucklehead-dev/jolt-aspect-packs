@@ -10,5 +10,5 @@
            {:value 3 :case 4}
            {:value 4 :case 5}
            {:value 5 :case 1}]
- :boundaries [{:case 1}
-              {:case 6}]}
+ :boundaries [{:case 1 :accept? true}
+              {:case 6 :accept? false}]}

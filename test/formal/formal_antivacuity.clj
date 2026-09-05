@@ -25,20 +25,18 @@
             (let [quoted-symbol? (= c \|)
                   delimiter c
                   [j token]
-                  (loop [j (inc i), escaped? false]
+                  (loop [j (inc i)]
                     (when (>= j n)
                       (throw (ex-info "unterminated SMT-LIB quoted token" {:offset i})))
                     (let [d (.charAt source j)]
                       (cond
-                        escaped? (recur (inc j) false)
-                        (and quoted-symbol? (= d \\)) (recur (inc j) true)
                         (= d delimiter)
                         (if (and (not quoted-symbol?)
                                  (< (inc j) n)
                                  (= (.charAt source (inc j)) \"))
-                          (recur (+ j 2) false)
+                          (recur (+ j 2))
                           [(inc j) (subs source i (inc j))])
-                        :else (recur (inc j) false))))]
+                        :else (recur (inc j)))))]
               (recur j (conj tokens token)))
             :else
             (let [j (loop [j i]
@@ -219,6 +217,20 @@
 (defn- asserted-symbol? [assertions symbol]
   (boolean (some #(= symbol %) assertions)))
 
+(defn- conjuncts [expr]
+  (let [expr (normalize expr)]
+    (if (and (vector? expr) (= "and" (first expr)))
+      (rest expr)
+      [expr])))
+
+(defn- asserts-classification?
+  [assertions predicate implementation-result accept?]
+  (let [observed (set (mapcat conjuncts assertions))
+        required (if accept?
+                   #{predicate implementation-result}
+                   #{["not" predicate] ["not" implementation-result]})]
+    (set/subset? required observed)))
+
 (defn- query-key [assertions {:keys [selector case-selector violation]}]
   {:selector (selector-value assertions selector)
    :case (when case-selector (selector-value assertions case-selector))
@@ -253,6 +265,9 @@
             (throw (ex-info "reference roles must be SMT symbol strings" {:reference reference})))
         _ (when-not (integer? value)
             (throw (ex-info "reference selector value must be an integer" {:value value})))
+        _ (when-not (string? (:case-selector reference))
+            (throw (ex-info "reference case selector must be an SMT symbol string"
+                            {:case-selector (:case-selector reference)})))
         _ (doseq [symbol [predicate implementation-result]]
             (when-not (contains? defs symbol)
               (throw (ex-info "role has no defining equality" {:symbol symbol}))))
@@ -283,15 +298,25 @@
             (throw (ex-info "could not align check-sat commands with solver results"
                             {:queries (count queries) :results (count results)})))
         observed (mapv (fn [query result]
-                         [(query-key (:assertions query) reference) result])
+                         [(query-key (:assertions query) reference) result query])
                        queries results)
         ref-key (expected-query reference value nil true)
         mutants (:mutants contract)
         _ (when-not (seq mutants)
             (throw (ex-info "at least one mutant SAT control is required" {})))
+        _ (doseq [mutant mutants]
+            (when-not (and (integer? (:value mutant))
+                           (integer? (:case mutant)))
+              (throw (ex-info "mutant controls require integer value and case selectors"
+                              {:mutant mutant}))))
         boundaries (:boundaries contract)
         _ (when-not (seq boundaries)
             (throw (ex-info "at least one boundary/non-vacuity SAT control is required" {})))
+        _ (doseq [boundary boundaries]
+            (when-not (and (integer? (:case boundary))
+                           (boolean? (:accept? boundary)))
+              (throw (ex-info "boundary controls require an integer case and boolean accept? classification"
+                              {:boundary boundary}))))
         expected-keys (concat [ref-key]
                               (map (fn [{mutant-value :value case-value :case}]
                                      (expected-query reference mutant-value case-value true))
@@ -314,12 +339,18 @@
               (when-not (= ["sat"] (vec found))
                 (throw (ex-info "mutant disagreement query must occur once and be SAT"
                                 {:query key :results (vec found)})))))
-        _ (doseq [{case-value :case} boundaries]
+        _ (doseq [{case-value :case accept? :accept?} boundaries]
             (let [key (expected-query reference value case-value false)
-                  found (map second (filter #(= key (first %)) observed))]
+                  matches (filter #(= key (first %)) observed)
+                  found (map second matches)
+                  assertions (get-in (first matches) [2 :assertions])]
               (when-not (= ["sat"] (vec found))
                 (throw (ex-info "boundary/non-vacuity query must occur once and be SAT"
-                                {:query key :results (vec found)})))))]
+                                {:query key :results (vec found)})))
+              (when-not (asserts-classification? assertions predicate
+                                                  implementation-result accept?)
+                (throw (ex-info "boundary query must explicitly classify both reference and implementation"
+                                {:query key :accept? accept?})))))]
     {:reference-definitions (count (:definitions ref))
      :implementation-definitions (count (:definitions impl))
      :mutants (count mutants)

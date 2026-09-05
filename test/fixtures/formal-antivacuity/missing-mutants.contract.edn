@@ -6,4 +6,4 @@
              :value 0
              :case-selector "scenario"}
  :mutants []
- :boundaries [{:case 0}]}
+ :boundaries [{:case 0 :accept? true}]}

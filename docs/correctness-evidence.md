@@ -47,12 +47,21 @@ The same model must contain, and Z3 must execute, all three semantic controls:
 3. at least one distinct boundary/non-vacuity query is `sat`.
 
 The EDN contract identifies roles and selector values, not assertion names.
+Each boundary also declares `:accept? true` or `false`; its scoped query must
+explicitly assert that both the reference and checked implementation have that
+classification. A satisfiable selector assignment alone is not a non-vacuity
+witness.
+
 The gate parses SMT-LIB structure, follows defining equalities, selects the
 reference implementation branch, compares normalized definition graphs, and
 matches scoped assertions to solver results. Grep checks for names are not
 evidence of encoding independence. This structural gate complements rather
 than replaces a semantic oracle: algebraically disguised duplication and two
-independently written encodings with the same mistake remain possible.
+independently written encodings with the same mistake remain possible. A
+reference routed through a selector-dependent implementation can also evade the
+structural comparison when its unresolved and selected expression shapes
+differ; the required mutant-SAT query is a tested fail-closed backstop for that
+case.
 
 The initial retrospective core.async set is indexed by
 [`#1`](https://github.com/chucklehead-dev/jolt-aspect-packs/issues/1). Its fix
