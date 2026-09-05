@@ -5,7 +5,7 @@
    :extra-deps
    {io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.event-contract-runner"]}
   :db-corpus-offline
   {:extra-paths ["corpus" "models" "corpus-test"]
@@ -44,7 +44,7 @@
      :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.test-runner"]}
   :db-conformance
   {:extra-paths ["conformance" "models"]
@@ -54,7 +54,7 @@
      :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}
     io.github.chucklehead-dev/jolt-otel-instrumentation-db
     {:git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-db.git"
      :git/sha "0b6a5b850bb959563cff602ec684bb48dcc2f541"}}
@@ -67,7 +67,7 @@
      :git/sha "f4e3eb83015566e4cadaedd7f5e8ad80dc57404f"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.glitter.conformance-runner"]}
   :glimmer-conformance
   {:extra-paths ["conformance" "models"]
@@ -77,7 +77,7 @@
      :git/sha "6dab5597dc0d912793fe175d0d3cbb9e75f11426"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.glimmer.conformance-runner"]}
   :http-server-conformance
   {:extra-paths ["conformance" "models"]
@@ -87,7 +87,7 @@
      :git/sha "6d7837c14dbf9710e833933ef61e6314d12b54ad"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "c74762b89679674076834b2728252ec97894ffe1"}}
+     :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.http-server.conformance-runner"]}}
  :tasks
  {test "jolt -M:test"

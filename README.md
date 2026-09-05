@@ -51,7 +51,7 @@ context. It does not redact payloads or prove linearizability. Generic legacy
 traces keep their existing APIs. The pure `:event-contract` alias (or
 `event-contract-bb.edn`) tests actual producer events and stale-header/malformed
 controls on the existing BB/JVM/Jolt three-platform CI matrix without libhegel.
-The test/conformance pins track the profile candidate; independent db corpus
+The test/conformance pins track the merged profile; independent db corpus
 provenance and its existing dependency/setup-action pins remain unchanged.
 
 ## Current pack
