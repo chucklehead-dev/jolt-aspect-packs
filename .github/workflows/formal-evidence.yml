@@ -1,0 +1,35 @@
+name: formal evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  formal-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Babashka
+        uses: DeLaGuardo/setup-clojure@13.6.1
+        with:
+          bb: 1.13.220
+
+      - name: Install Z3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y z3=4.8.12-3.1build1
+
+      - name: Record tool versions
+        run: |
+          test "$(bb --version)" = "babashka v1.13.220"
+          test "$(z3 --version)" = "Z3 version 4.8.12 - 64 bit"
+
+      - name: Check formal evidence and anti-vacuity controls
+        run: make checkpoint-replay-proof formal-antivacuity-self-test
