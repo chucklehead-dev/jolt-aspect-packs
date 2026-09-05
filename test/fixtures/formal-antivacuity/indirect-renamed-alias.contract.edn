@@ -1,0 +1,9 @@
+{:spec "test/fixtures/formal-antivacuity/indirect-renamed-alias.smt2"
+ :reference {:predicate "reference-valid"
+             :implementation-result "implementation-accept"
+             :violation "disagreement"
+             :selector "implementation"
+             :value 0
+             :case-selector "scenario"}
+ :mutants [{:value 1 :case 1}]
+ :boundaries [{:case 0 :accept? true}]}

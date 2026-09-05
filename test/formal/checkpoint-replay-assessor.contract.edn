@@ -1,0 +1,14 @@
+{:spec "test/formal/checkpoint-replay-assessor.smt2"
+ :reference {:predicate "replay-reference-valid"
+             :implementation-result "implementation-accept"
+             :violation "replay-assessment-violation"
+             :selector "implementation"
+             :value 0
+             :case-selector "scenario"}
+ :mutants [{:value 1 :case 2}
+           {:value 2 :case 3}
+           {:value 3 :case 4}
+           {:value 4 :case 5}
+           {:value 5 :case 1}]
+ :boundaries [{:case 1 :accept? true}
+              {:case 6 :accept? false}]}
