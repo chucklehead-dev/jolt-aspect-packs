@@ -10,7 +10,18 @@ case "${1:-}" in
 esac
 
 case "$(uname -s)" in
-  Linux) isolation=(unshare --user --map-root-user --net) ;;
+  Linux)
+    if [[ "${GITHUB_ACTIONS:-}" == true && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
+      # Hosted Ubuntu restricts unprivileged uid_map. Create only the network
+      # namespace with privilege, then drop to the original UID/GID before
+      # executing any runtime or repository code. Keep resolved user caches.
+      isolation=(sudo --preserve-env=PATH,HOME,JAVA_HOME,JOLT_CACHE_DIR,HEGEL_LIBHEGEL_LIBRARY,RUNNER_TEMP
+                 /usr/bin/unshare --net --setgid "$(id -g)" --setuid "$(id -u)")
+      test "$("${isolation[@]}" id -u)" = "$(id -u)"
+    else
+      isolation=(unshare --user --map-root-user --net)
+    fi
+    ;;
   Darwin) isolation=(/usr/bin/sandbox-exec -p '(version 1) (allow default) (deny network*)') ;;
   *) echo 'unsupported isolation host' >&2; exit 2 ;;
 esac

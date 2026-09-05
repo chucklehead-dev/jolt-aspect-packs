@@ -9,8 +9,14 @@
   #{:seq :operation-id :parent-operation-id :context-id :causal-links :phase
     :operation :site-id :build-identity :input})
 (def ^:private terminal-keys #{:seq :operation-id :phase :value})
-(def ^:private systems #{"sqlite" "duckdb" "postgresql" "clickhouse" "other_sql"})
-(def ^:private operations #{"SELECT" "INSERT" "UPDATE" "DELETE"})
+(def systems
+  "Ordered synthetic-v1 generation domain; intentionally narrower than the model."
+  ["sqlite" "duckdb" "postgresql" "clickhouse" "other_sql"])
+(def mutations
+  "Ordered synthetic-v1 mutation domain. Ordering participates in seed replay."
+  ["INSERT" "UPDATE" "DELETE"])
+(def ^:private system-set (set systems))
+(def ^:private operations (conj (set mutations) "SELECT"))
 (def ^:private contexts #{:synthetic/db-request :synthetic/db-other})
 
 (defn- invalid! [path reason]
@@ -54,7 +60,7 @@
     ;; profile; the existing provider/model may support a broader domain.
     (closed! (conj path :input) input #{:operation :system})
     (string-member! (conj path :input :operation) (:operation input) operations)
-    (string-member! (conj path :input :system) (:system input) systems)))
+    (string-member! (conj path :input :system) (:system input) system-set)))
 
 (defn- terminal! [path event]
   (closed! path event terminal-keys)

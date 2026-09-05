@@ -7,7 +7,9 @@
 
 (defn- reachable? []
   #?(:jolt
-     (let [file (java.io.File/createTempFile "db-corpus-network-" ".pom")]
+     (let [directory (java.io.File. (or (System/getenv "RUNNER_TEMP")
+                                       (System/getProperty "java.io.tmpdir")))
+           file (java.io.File/createTempFile "db-corpus-network-" ".pom" directory)]
        (try
          ;; This is the selected runtime's native HTTPS path, not curl or a
          ;; subprocess. The fixed public POM is only a reachability control.

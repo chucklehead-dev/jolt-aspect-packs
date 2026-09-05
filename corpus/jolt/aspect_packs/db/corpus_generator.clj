@@ -1,10 +1,10 @@
 (ns jolt.aspect-packs.db.corpus-generator
-  "Pure synthetic db corpus witnesses; no provider, driver, or I/O dependency."
-  (:require [hegel.generator :as g]))
+  "Synthetic db corpus witnesses. Requiring this namespace loads Hegel's engine;
+  the baked consumer must not require it. No provider or driver dependency."
+  (:require [hegel.generator :as g]
+            [jolt.aspect-packs.db.corpus-profile :as profile]))
 
 (def ^:private max-cardinality 9223372036854775807)
-(def ^:private systems ["sqlite" "duckdb" "postgresql" "clickhouse" "other_sql"])
-(def ^:private mutations ["INSERT" "UPDATE" "DELETE"])
 
 (defn witness
   "Build one complete privacy-shaped six-event db lifecycle witness.
@@ -69,5 +69,5 @@
             (witness returned affected system mutation))
           (g/tuple (cardinality-generator)
                    (cardinality-generator)
-                   (g/sampled-from systems)
-                   (g/sampled-from mutations))))
+                   (g/sampled-from profile/systems)
+                   (g/sampled-from profile/mutations))))

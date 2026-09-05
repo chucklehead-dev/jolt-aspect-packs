@@ -1,6 +1,7 @@
 (ns jolt.aspect-packs.db.corpus-generator-test
   (:require [clojure.test :refer [deftest is]]
             [jolt.aspect-packs.db.corpus-generator :as corpus]
+            [jolt.aspect-packs.db.corpus-profile :as profile]
             [jolt.aspect-packs.db.model :as model]))
 
 (def expected
@@ -42,6 +43,15 @@
   ;; Construction performs no database, OTel, or filesystem work; actual draws
   ;; belong to the separately serialized native materialization gate.
   (is (fn? (corpus/generator))))
+
+(deftest entire-synthetic-domain-agrees-with-the-existing-model
+  ;; Check every finite semantic label, not just whichever four values a seed
+  ;; happens to choose. Keep the broader model's acceptance domain separate.
+  (doseq [system profile/systems
+          mutation profile/mutations
+          cardinality [0 1 9223372036854775807]]
+    (let [events (corpus/witness cardinality cardinality system mutation)]
+      (is (= events (profile/check! events))))))
 
 (defn -main [& _]
   (let [{:keys [fail error]}
