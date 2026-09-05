@@ -1,4 +1,4 @@
-{:spec "test/fixtures/formal-antivacuity/reference-through-implementation.smt2"
+{:spec "reference-through-implementation.smt2"
  :reference {:predicate "reference-valid"
              :implementation-result "implementation-accept"
              :violation "disagreement"

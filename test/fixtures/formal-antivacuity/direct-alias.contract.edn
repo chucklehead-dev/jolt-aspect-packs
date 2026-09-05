@@ -1,4 +1,4 @@
-{:spec "test/fixtures/formal-antivacuity/direct-alias.smt2"
+{:spec "direct-alias.smt2"
  :reference {:predicate "reference-valid"
              :implementation-result "implementation-accept"
              :violation "disagreement"

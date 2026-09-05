@@ -1,4 +1,4 @@
-{:spec "test/formal/checkpoint-replay-assessor.smt2"
+{:spec "checkpoint-replay-assessor.smt2"
  :reference {:predicate "replay-reference-valid"
              :implementation-result "implementation-accept"
              :violation "replay-assessment-violation"

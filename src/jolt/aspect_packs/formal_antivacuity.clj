@@ -1,5 +1,6 @@
-(ns formal-antivacuity
+(ns jolt.aspect-packs.formal-antivacuity
   (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.java.shell :as shell]
             [clojure.set :as set]
             [clojure.string :as str]))
@@ -237,7 +238,7 @@
    :violation? (asserted-symbol? assertions violation)})
 
 (defn- solver-results [z3 spec]
-  (let [{:keys [exit out err]} (shell/sh z3 spec)]
+  (let [{:keys [exit out err]} (shell/sh z3 (str spec))]
     (when-not (zero? exit)
       (throw (ex-info "z3 failed" {:exit exit :stderr err})))
     (let [results (->> (str/split-lines out)
@@ -254,8 +255,17 @@
     case-selector (assoc :case case-value)))
 
 (defn analyze! [contract-path]
-  (let [contract (edn/read-string (slurp contract-path))
-        spec (:spec contract)
+  (let [contract-file (io/file contract-path)
+        contract (edn/read-string (slurp contract-file))
+        declared-spec (:spec contract)
+        _ (when-not (string? declared-spec)
+            (throw (ex-info "contract spec must be a path string"
+                            {:spec declared-spec})))
+        declared-file (io/file declared-spec)
+        spec (if (.isAbsolute declared-file)
+               declared-file
+               (io/file (.getParentFile (.getAbsoluteFile contract-file))
+                        declared-spec))
         forms (parse-smt (slurp spec))
         defs (definitions forms)
         {:keys [predicate implementation-result selector value violation]
@@ -360,7 +370,7 @@
 (defn -main [& args]
   (when-not (= 1 (count args))
     (binding [*out* *err*]
-      (println "usage: bb test/formal/formal_antivacuity.clj CONTRACT.edn"))
+      (println "usage: bb -m jolt.aspect-packs.formal-antivacuity CONTRACT.edn"))
     (System/exit 2))
   (try
     (let [{:keys [reference-definitions implementation-definitions mutants boundaries]}
@@ -369,5 +379,3 @@
                        reference-definitions implementation-definitions mutants boundaries)))
     (catch Throwable error
       (fail! (or (ex-message error) (str error))))))
-
-(apply -main *command-line-args*)

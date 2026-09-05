@@ -1,4 +1,4 @@
-{:spec "test/fixtures/formal-antivacuity/renamed-duplicate.smt2"
+{:spec "renamed-duplicate.smt2"
  :reference {:predicate "reference-valid"
              :implementation-result "implementation-accept"
              :violation "disagreement"

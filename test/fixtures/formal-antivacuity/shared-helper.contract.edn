@@ -1,4 +1,4 @@
-{:spec "test/fixtures/formal-antivacuity/shared-helper.smt2"
+{:spec "shared-helper.smt2"
  :reference {:predicate "reference-valid"
              :implementation-result "implementation-accept"
              :violation "disagreement"
