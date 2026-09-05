@@ -1,0 +1,11 @@
+{:sha256 "55e814e46b1447ca410d5a1942232ad71d038b4d753bca5b26afaac96f8ca5ff"
+ :count 4
+ :valid-case-policy :exact-valid-count
+ :provenance
+ {:hegel-sha "88cc32cc3c39cb445fa16f725ff5f9c1db115858"
+  :libhegel-version "0.36.3"
+  :runtime {:host :bb :version "1.13.220" :os "Linux" :arch "amd64"}
+  :property-id "jolt.aspect-packs.db/synthetic-corpus-v1"
+  :generator-revision "synthetic-db-generator-v1"
+  :model-revision "sha256:ece75a520e5de615c7075fbc2f3dbf3b0e09e2d366aef0b403b72f50b7b74007"
+  :seam-revision "a55c554a66d8f5e9e5198e238773f8218f6050d7"}}
