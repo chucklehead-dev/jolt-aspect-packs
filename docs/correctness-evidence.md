@@ -30,7 +30,8 @@ this ledger does not authorize an upstream pull request.
 ## Formal-model anti-vacuity
 
 Every SMT model used as correctness evidence must have a machine-readable
-anti-vacuity contract and pass `test/formal/formal_antivacuity.clj`. The checked
+anti-vacuity contract and pass
+`bb -cp src -m jolt.aspect-packs.formal-antivacuity CONTRACT.edn`. The checked
 implementation or selector branch must be encoded independently of the
 reference property: it may not depend on the reference predicate, share a
 derived helper with it, or reduce to the same normalized SMT expression through
@@ -47,6 +48,8 @@ The same model must contain, and Z3 must execute, all three semantic controls:
 3. at least one distinct boundary/non-vacuity query is `sat`.
 
 The EDN contract identifies roles and selector values, not assertion names.
+Its `:spec` path is resolved relative to the contract file (or may be absolute),
+so a pinned consumer can invoke the checker from any working directory.
 Each boundary also declares `:accept? true` or `false`; its scoped query must
 explicitly assert that both the reference and checked implementation have that
 classification. A satisfiable selector assignment alone is not a non-vacuity
@@ -62,6 +65,12 @@ reference routed through a selector-dependent implementation can also evade the
 structural comparison when its unresolved and selected expression shapes
 differ; the required mutant-SAT query is a tested fail-closed backstop for that
 case.
+
+The namespace is in the library's `src` path so dependent repositories can pin
+one reviewed `jolt-aspect-packs` revision in `bb.edn` or `-Sdeps` and invoke the
+same CLI from that resolved classpath. Its public `analyze!` function returns
+the checked definition/control counts and solver results for callers that need
+structured evidence; requiring the namespace has no process side effects.
 
 The initial retrospective core.async set is indexed by
 [`#1`](https://github.com/chucklehead-dev/jolt-aspect-packs/issues/1). Its fix

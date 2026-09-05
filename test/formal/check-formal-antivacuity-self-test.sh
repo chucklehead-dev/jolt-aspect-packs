@@ -1,12 +1,16 @@
 #!/bin/sh
 set -eu
 
-gate="bb test/formal/formal_antivacuity.clj"
-fixtures=test/fixtures/formal-antivacuity
+root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+fixtures="$root/test/fixtures/formal-antivacuity"
+
+run_gate() {
+  bb -cp "$root/src" -m jolt.aspect-packs.formal-antivacuity "$1"
+}
 
 pass_report=$(mktemp)
 trap 'rm -f "$pass_report"' EXIT
-$gate "$fixtures/independent.contract.edn" >"$pass_report"
+run_gate "$fixtures/independent.contract.edn" >"$pass_report"
 grep -Fq "mutants=1 SAT, boundaries=1 SAT" "$pass_report" || {
   echo "FAIL formal anti-vacuity self-test: independent control counts drifted" >&2
   cat "$pass_report" >&2
@@ -18,7 +22,7 @@ trap - EXIT
 for fixture in direct-alias renamed-duplicate indirect-renamed-alias shared-helper reference-through-implementation missing-mutants missing-boundaries missing-boundary-classification vacuous-boundary; do
   report=$(mktemp)
   trap 'rm -f "$report"' EXIT
-  if $gate "$fixtures/$fixture.contract.edn" >"$report" 2>&1; then
+  if run_gate "$fixtures/$fixture.contract.edn" >"$report" 2>&1; then
     echo "FAIL formal anti-vacuity self-test: $fixture unexpectedly passed" >&2
     exit 1
   fi
