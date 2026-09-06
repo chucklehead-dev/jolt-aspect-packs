@@ -56,7 +56,7 @@ SQLSTATE guarantees need explicit, privacy-reviewed driver descriptor and
 error contracts first.
 
 The compiled evidence is pinned to Jolt
-`04a543a291067fd51dc9aee1867b2b86f4b3a364` under Chez 10.4.1. The OTel
+`561f49259f4bdad7f9337199ca74cf25e3e8df0b` under Chez 10.4.1. The OTel
 consumer is pinned independently to
 `0b6a5b850bb959563cff602ec684bb48dcc2f541`; neither pin is inferred from a
 working tree.
