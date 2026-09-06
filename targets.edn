@@ -4,7 +4,7 @@
   {:git/url "https://github.com/casselc/jolt.git"
    :git/sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :manifest "META-INF/jolt/aspects/packs/core-async-db00fad.edn"
    :scenario "scenarios/core-async"
@@ -22,7 +22,7 @@
   {:git/url "https://github.com/casselc/db.git"
    :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :seam-revision "a55c554a66d8f5e9e5198e238773f8218f6050d7"
    :manifest "META-INF/jolt/aspects/packs/db-a55c554.edn"
@@ -48,7 +48,7 @@
   {:git/url "https://github.com/casselc/samizdat.git"
    :git/sha "ff9cfd8cf6bf08c0f61b71cc98eee8c354efa861"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :seam-revision "dd13b4b933d3db80a319d2c7b27af4ee6767fca5"
    :manifest "META-INF/jolt/aspects/packs/mycelium-dd13b4b.edn"
@@ -65,7 +65,7 @@
  {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :manifest "META-INF/jolt/aspects/packs/http-client-12b78ed.edn"
    :scenario "scenarios/http-client"
@@ -76,7 +76,7 @@
   {:git/url "https://github.com/casselc/jolt-http.git"
    :git/sha "35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :base {:git/sha "35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8"}
    :seam {:git/sha "3ef772262308bbf6039412366ae80690cec348b0"}
@@ -89,7 +89,7 @@
   {:git/url "https://github.com/casselc/glitter.git"
    :git/sha "f4e3eb83015566e4cadaedd7f5e8ad80dc57404f"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :upstream {:git/url "https://github.com/burinc/glitter.git"
               :git/sha "482642fd3c9671b05f0ffaa2ef47420b1a92553b"}
@@ -102,7 +102,7 @@
   {:git/url "https://github.com/casselc/glimmer.git"
    :git/sha "6dab5597dc0d912793fe175d0d3cbb9e75f11426"
    :compiler {:id jolt-lang/jolt
-              :git/sha "04a543a291067fd51dc9aee1867b2b86f4b3a364"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :chez "10.4.1"}
    :upstream {:git/url "https://github.com/jolt-lang/glimmer.git"
               :git/sha "55e38f0b21b8decbcf156f56d3c9dd25a875148b"}
@@ -117,7 +117,7 @@
              :git/sha "9b7683953b444ece2a2e783e8fa46d31177bb476"}
    :compiler {:id jolt-lang/jolt
               :git/url "https://github.com/casselc/jolt.git"
-              :git/sha "717eaeef8e9dca3d53045dadcdb8ae6d081500dd"
+              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
               :branch "integration/aspects"
               :chez "10.4.1"}
    :required-fix {:ledger 70
