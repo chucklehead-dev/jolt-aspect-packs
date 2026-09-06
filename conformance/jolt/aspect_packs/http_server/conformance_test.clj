@@ -105,11 +105,11 @@
            (get-in targets [:targets 'casselc/jolt-http :git/sha])))
     (is (= history-provider/target-revision
            (get-in scenario [:deps 'io.github.casselc/jolt-http :git/sha])))
-    (is (= "6d7837c14dbf9710e833933ef61e6314d12b54ad"
+    (is (= "fec1da017fc6c2522253291371ca9413851a961f"
            (get-in deps [:aliases :http-server-conformance :extra-deps
                          'io.github.chucklehead-dev/jolt-otel-instrumentation-http-server
                          :git/sha])))
-    (is (= "6d7837c14dbf9710e833933ef61e6314d12b54ad"
+    (is (= "fec1da017fc6c2522253291371ca9413851a961f"
            (get-in scenario
                    [:deps
                     'io.github.chucklehead-dev/jolt-otel-instrumentation-http-server

@@ -4,11 +4,11 @@
 
 (def target-revision
   "Live maintained jolt-http revision validated by this pack."
-  "c6effc3a04be1467e66da433b879a8a73a352228")
+  "35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8")
 
 (def target-base-revision
   "Merge base of target-revision and the maintained jolt-http main branch."
-  "126d30b47d926f8dbace386d5c94d0894315e06a")
+  "35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8")
 
 (def seam-revision
   "Compatibility id published by jolt-http for the unchanged lifecycle seams."

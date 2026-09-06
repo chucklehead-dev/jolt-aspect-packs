@@ -84,7 +84,7 @@
    :extra-deps
    {io.github.chucklehead-dev/jolt-otel-instrumentation-http-server
     {:git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-http-server.git"
-     :git/sha "6d7837c14dbf9710e833933ef61e6314d12b54ad"}
+     :git/sha "fec1da017fc6c2522253291371ca9413851a961f"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
      :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}

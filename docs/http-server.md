@@ -1,7 +1,9 @@
 # HTTP-server pack
 
 This pack targets `casselc/jolt-http` revision
-`c6effc3a04be1467e66da433b879a8a73a352228`. That revision retains the
+`35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8`. That revision includes the
+empty known-length chunk terminator and exact-capacity request-line/header
+parser fixes, plus source annotations for the two semantic seams. It retains the
 library-published compatibility id
 `3ef772262308bbf6039412366ae80690cec348b0` for two unchanged semantic seams:
 
