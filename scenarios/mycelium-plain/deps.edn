@@ -3,5 +3,12 @@
  {io.github.casselc/samizdat
   {:git/url "https://github.com/casselc/samizdat.git"
    :git/sha "ff9cfd8cf6bf08c0f61b71cc98eee8c354efa861"}
+  ;; Match the observed scenario's released RFC 0014 provider declarations.
+  io.github.jolt-lang/time
+  {:git/url "https://github.com/jolt-lang/time.git"
+   :git/sha "33c5e9831c046cfcbe68bc0c9c33e92568eaebb1"}
+  io.github.jolt-lang/jolt-crypto
+  {:git/url "https://github.com/jolt-lang/jolt-crypto.git"
+   :git/sha "44da69bad08a2fd7631bd4061e3fb53938dafff6"}
   io.github.chucklehead-dev/jolt-aspect-packs
   {:local/root "../.."}}}
