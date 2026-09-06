@@ -73,7 +73,7 @@ against an in-memory backend, without exposing native handles or UI content.
 See [the Glimmer pack notes](docs/glimmer.md).
 
 The HTTP-server pack targets jolt-http's normalized Ring handler and sanitized
-response seams at `c6effc3a04be1467e66da433b879a8a73a352228`. Its source
+response seams at `35d1d7f9ebdc796ee9bd4c80745298b2c8b7fdf8`. Its source
 conformance gate composes the production OpenTelemetry provider with the
 neutral Hegel history provider in the same explicit outer-to-inner order used
 by the compiled scenario. It proves remote-parented server spans, response and

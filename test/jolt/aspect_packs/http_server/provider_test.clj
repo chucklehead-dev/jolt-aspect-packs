@@ -172,7 +172,7 @@
 (deftest exact-target-manifest-and-provider-pins-agree
   (let [manifest
         (edn/read-string
-         (slurp "resources/META-INF/jolt/aspects/packs/http-server-c6effc3.edn"))
+         (slurp "resources/META-INF/jolt/aspects/packs/http-server-35d1d7f.edn"))
         targets (edn/read-string (slurp "targets.edn"))
         target (get-in targets [:targets 'casselc/jolt-http])]
     (is (= 1 (:schema manifest)))
