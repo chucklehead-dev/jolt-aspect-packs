@@ -43,6 +43,25 @@ pre-existing `:already-published`, and operation-specific `:reconciled` after
 an ambiguous provider acknowledgement. All three require the same exact
 privacy-safe reference shape before a later head commit can be accepted.
 
+## Process-crash cuts
+
+`jolt.aspect-packs.chdb-durable.faults` is a separate test-only control
+provider. It can stop an exact Durable command immediately before or after its
+target and publish a readiness marker for an external harness. It is never
+included by the observation pack and requires the compiler's explicit
+`:allow-control-aspects true` opt-in.
+
+`make chdb-durable-crash-smoke` builds a self-contained scenario, waits at each
+selected aspect barrier, sends real `SIGKILL`, then opens the same local
+namespace/object in a fresh process. The cuts use the same
+`durable/publish-wal` and `durable/commit-reference` command identities as the
+offline history and Quint/ITF bridge. The required outcomes are:
+
+- before upload: no WAL object and sequence zero;
+- after upload: one unreachable WAL object and sequence zero;
+- after head CAS: one reachable WAL object, sequence one, and one replayed SQL
+  statement.
+
 Run the focused provider/model tests with either JVM Clojure or Jolt:
 
 ```sh

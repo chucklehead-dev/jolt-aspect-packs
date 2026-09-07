@@ -6,7 +6,7 @@ define assert-effect-report
 	@sh test/assert-effect-report.sh "$(JOLT_ASPECT_JOLT)" "$(1)" "$(2)" "$(3)"
 endef
 
-.PHONY: test checkpoint-replay-proof formal-antivacuity-self-test checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke core-async-flow-aspect-smoke core-async-flow-fault-smoke core-async-flow-plain-smoke db-aspect-smoke db-plain-smoke chdb-durable-aspect-smoke chdb-durable-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
+.PHONY: test checkpoint-replay-proof formal-antivacuity-self-test checkpoint-runtime-history db-source-test glitter-source-test glimmer-source-test http-server-source-test aspect-smoke core-async-aspect-smoke core-async-fault-smoke core-async-plain-smoke core-async-flow-aspect-smoke core-async-flow-fault-smoke core-async-flow-plain-smoke db-aspect-smoke db-plain-smoke chdb-durable-aspect-smoke chdb-durable-crash-smoke chdb-durable-plain-smoke http-client-aspect-smoke http-server-aspect-smoke glitter-aspect-smoke glimmer-aspect-smoke mycelium-aspect-smoke mycelium-plain-smoke jolt-regression-matrix jolt-regression-matrix-self-test jolt-regression-coverage jolt-regression-coverage-live
 
 test: checkpoint-replay-proof formal-antivacuity-self-test
 	$(JOLT) -M:test
@@ -227,6 +227,17 @@ chdb-durable-aspect-smoke:
 	  -Sdeps '{:paths ["test" "src"]}' \
 	  -m jolt.aspect-packs.chdb-durable.report-test \
 	  scenarios/chdb-durable/target/aspects.edn
+
+chdb-durable-crash-smoke:
+	@test -n "$(JOLT_ASPECT_JOLT)" || \
+	  (echo "JOLT_ASPECT_JOLT must be an absolute path to an aspect-capable jolt" >&2; exit 2)
+	@cd scenarios/chdb-durable-crash && \
+	  "$(JOLT_ASPECT_JOLT)" build \
+	    -m jolt.aspect-packs.scenario.chdb-durable-crash \
+	    -o target/chdb-durable-crash-scenario
+	@test/chdb-durable-crash.sh \
+	  scenarios/chdb-durable-crash/target/chdb-durable-crash-scenario
+	$(call assert-effect-report,scenarios/chdb-durable-crash/target/chdb-durable-crash-scenario.build/effects.edn,woven,scenarios/chdb-durable-crash/target/aspects.edn)
 
 chdb-durable-plain-smoke:
 	@test -n "$(JOLT_ASPECT_JOLT)" || \
