@@ -59,12 +59,47 @@
               (get-in commands [4 :result :head :manifest-sequence])]))
       (is (= (get-in commands [0 :writer])
              (get-in commands [2 :writer :writer])))
+      (is (apply = (map :durable-object commands)))
+      (is (apply = (map #(get-in % [:result :durable-object]) commands)))
+      (is (= (get-in commands [0 :durable-object])
+             (get-in commands [0 :result :durable-object])))
       (is (nil? (get-in commands [4 :result :head :writer])))
       (doseq [secret ["store-secret" "owner-secret" "instance-secret"
                       "private-wal-bytes" "deadbeef" "digest-secret"
                       "etag-secret"]]
         (is (not (.contains printed secret))))
       (is (true? (history/assert-complete! journal))))))
+
+(deftest partitions-interleaved-control-histories-by-opaque-durable-object
+  (let [journal (history/journal)
+        store-a {:root "/private/a"}
+        store-b {:root "/private/b"}
+        active-a (head 1 "owner-a" "instance-a" 0 nil)
+        active-b (head 1 "owner-b" "instance-b" 0 nil)]
+    (invoke journal :durable/acquire
+            [store-a {:owner "owner-a" :instance "instance-a"
+                      :now 10 :expires-at 20 :force? false}]
+            {:status :acquired :head active-a})
+    (invoke journal :durable/acquire
+            [store-b {:owner "owner-b" :instance "instance-b"
+                      :now 11 :expires-at 21 :force? false}]
+            {:status :acquired :head active-b})
+    (let [events (history/events journal)
+          object-a (get-in events [0 :input :durable-object])
+          object-b (get-in events [2 :input :durable-object])
+          wrong-terminal
+          (assoc-in events [1 :value :durable-object] object-b)
+          collapsed
+          (-> events
+              (assoc-in [2 :input :durable-object] object-a)
+              (assoc-in [3 :value :durable-object] object-a))]
+      (is (not= object-a object-b))
+      (is (= events (model/check! events)))
+      (is (thrown? Exception (model/check! wrong-terminal)))
+      (is (thrown? Exception (model/check! collapsed)))
+      (doseq [secret ["/private/a" "/private/b" "owner-a" "owner-b"
+                      "instance-a" "instance-b"]]
+        (is (not (.contains (pr-str events) secret)))))))
 
 (deftest checkpoint-publication-and-errors-use-bounded-shapes
   (let [journal (history/journal)

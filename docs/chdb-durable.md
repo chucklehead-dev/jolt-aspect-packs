@@ -13,19 +13,22 @@ The provider records the control vocabulary used by the Durable Quint model:
 - `:renew-attempt`
 - `:release-attempt`
 
-Writer identity, immutable-object identity, and publication-attempt identity
-are stable only inside one journal and are emitted as opaque tokens. Generation
-and manifest sequence remain visible because they are the protocol's fencing
-and ordering coordinates. The provider never retains backend instances,
+Durable-object identity, writer identity, immutable-object identity, and
+publication-attempt identity are stable only inside one journal and are emitted
+as opaque tokens. The object token partitions interleaved commands from
+independent backends; it is correlation metadata, not a fencing or ordering
+coordinate. Generation and manifest sequence remain visible because they are
+the protocol's fencing and ordering coordinates. The public event API never exposes backend instances,
 owner/instance strings, SQL or WAL bytes, filesystem paths, full object keys,
 digests, ETags, credentials, exception messages, or unknown head fields.
 
 `jolt.aspect-packs.chdb-durable.model/check!` runs outside advice. It checks the
 canonical Hegel envelope, contiguous sequence, closed synchronous lifecycles,
-context and causal links, bounded command/terminal shapes, and a pure Durable
-head transition fold. `model/commands` produces one checked command plus result
-per invocation. That projection is the adapter boundary for a Quint fixed-trace
-test; it is not itself an exhaustive model-checking claim.
+context and causal links, bounded command/terminal shapes, and one pure Durable
+head transition fold per opaque object. `model/commands` produces one checked
+command plus result per invocation and retains that object token. That
+projection is the adapter boundary for a Quint fixed-trace test; it is not
+itself an exhaustive model-checking claim.
 
 The mapping to the existing bounded Quint model is direct for acquire,
 publication, commit, and release. Checkpoint publication is a publication with

@@ -108,11 +108,17 @@
   (if-not history/*journal*
     (proceed)
     (let [journal history/*journal*]
-      (history/invoke! journal join-point
-                       (command-input journal (:id join-point) evaluated-args)
-                       {:return-fn #(return-summary journal %)
-                        :throw-fn throw-summary}
-                       proceed))))
+      (let [durable-object (history/opaque-token! journal
+                                                   (first evaluated-args))]
+        (history/invoke!
+         journal join-point
+         (assoc (command-input journal (:id join-point) evaluated-args)
+                :durable-object durable-object)
+         {:return-fn #(assoc (return-summary journal %)
+                             :durable-object durable-object)
+          :throw-fn #(assoc (throw-summary %)
+                            :durable-object durable-object)}
+         proceed)))))
 
 (def aspect-provider
   {:schema 1

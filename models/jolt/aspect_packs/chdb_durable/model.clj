@@ -40,33 +40,40 @@
            (reference? (:last-reference value)))))
 
 (defn- input? [{:keys [command writer kind reference payload-size now
-                        expires-at force?] :as input}]
+                        expires-at force? durable-object] :as input}]
   (and
    (map? input)
+   (opaque-writer? durable-object)
    (case command
      :acquire
-     (and (= #{:command :writer :now :expires-at :force?} (set (keys input)))
+     (and (= #{:command :writer :now :expires-at :force? :durable-object}
+             (set (keys input)))
           (opaque-writer? writer) (number? now) (number? expires-at)
           (boolean? force?))
 
      :publish
-     (and (= #{:command :writer :kind :payload-size} (set (keys input)))
+     (and (= #{:command :writer :kind :payload-size :durable-object}
+             (set (keys input)))
           (writer? writer) (= :wal kind)
           (integer? payload-size) (not (neg? payload-size)))
 
      :checkpoint-publish
-     (and (= #{:command :writer} (set (keys input))) (writer? writer))
+     (and (= #{:command :writer :durable-object} (set (keys input)))
+          (writer? writer))
 
      :commit-attempt
-     (and (= #{:command :writer :kind :reference} (set (keys input)))
+     (and (= #{:command :writer :kind :reference :durable-object}
+             (set (keys input)))
           (writer? writer) (= kind (:kind reference)) (reference? reference))
 
      :renew-attempt
-     (and (= #{:command :writer :expires-at} (set (keys input)))
+     (and (= #{:command :writer :expires-at :durable-object}
+             (set (keys input)))
           (writer? writer) (number? expires-at))
 
      :release-attempt
-     (and (= #{:command :writer} (set (keys input))) (writer? writer))
+     (and (= #{:command :writer :durable-object} (set (keys input)))
+          (writer? writer))
 
      false)))
 
@@ -93,23 +100,28 @@
             (let [operation (:operation (get invocations (:operation-id event)))
                   value (:value event)]
               (and (map? value)
+                   (opaque-writer? (:durable-object value))
                    (if (= :throw (:phase event))
-                     (and (= #{:outcome :error-type} (set (keys value)))
+                     (and (= #{:outcome :error-type :durable-object}
+                             (set (keys value)))
                           (= :error (:outcome value))
                           (keyword? (:error-type value)))
                      (case operation
                        :durable/acquire
                        (and (contains? #{:acquired :reconciled} (:outcome value))
-                            (= #{:outcome :head} (set (keys value)))
+                            (= #{:outcome :head :durable-object}
+                               (set (keys value)))
                             (head? (:head value)))
                        (:durable/publish-wal :durable/publish-checkpoint)
                        (and (contains? #{:published :already-published}
                                        (:outcome value))
-                            (= #{:outcome :reference} (set (keys value)))
+                            (= #{:outcome :reference :durable-object}
+                               (set (keys value)))
                             (reference? (:reference value)))
                        (:durable/commit-reference :durable/renew :durable/release)
                        (and (contains? #{:committed :reconciled} (:outcome value))
-                            (= #{:outcome :head} (set (keys value)))
+                            (= #{:outcome :head :durable-object}
+                               (set (keys value)))
                             (head? (:head value)))
                        false))))))
         events)))))
@@ -170,6 +182,10 @@
   (trace/event-model
    :chdb-durable/control-transitions
    {:initial {:valid? true :invocations {} :head nil}
+    :scope (fn [event]
+             (if (= :invoke (:phase event))
+               (get-in event [:input :durable-object])
+               (get-in event [:value :durable-object])))
     :step (fn [state event]
             (if (= :invoke (:phase event))
               (assoc-in state [:invocations (:operation-id event)] event)
@@ -190,7 +206,8 @@
 
 (defn commands
   "Project checked aspect events into the command/outcome vocabulary shared
-  with the Quint fixed-trace adapter."
+  with the Quint fixed-trace adapter. Every command and result retains the
+  same privacy-safe `:durable-object` token for multi-object partitioning."
   [events]
   (check! events)
   (let [terminals (into {} (map (juxt :operation-id :value))
