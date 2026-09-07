@@ -38,6 +38,11 @@ The unconstrained Quint verification remains authoritative for exploration;
 captured woven histories validate concrete executions against the same
 transition vocabulary.
 
+Immutable publication outcomes include confirmed `:published`, verified
+pre-existing `:already-published`, and operation-specific `:reconciled` after
+an ambiguous provider acknowledgement. All three require the same exact
+privacy-safe reference shape before a later head commit can be accepted.
+
 Run the focused provider/model tests with either JVM Clojure or Jolt:
 
 ```sh

@@ -109,7 +109,7 @@
                    "size" 999 "sha256" "private-digest"}]
     (invoke journal :durable/publish-checkpoint
             [:private-store token "/private/checkpoint.tar.gz"]
-            {:status :published :reference reference})
+            {:status :reconciled :reference reference})
     (let [expected (ex-info "private error message"
                             {:type :jdbc.chdb.durable.control/lease-fenced
                              :owner "private-owner"})

@@ -113,7 +113,8 @@
                                (set (keys value)))
                             (head? (:head value)))
                        (:durable/publish-wal :durable/publish-checkpoint)
-                       (and (contains? #{:published :already-published}
+                       (and (contains? #{:published :already-published
+                                        :reconciled}
                                        (:outcome value))
                             (= #{:outcome :reference :durable-object}
                                (set (keys value)))
