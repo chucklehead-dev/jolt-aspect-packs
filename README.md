@@ -90,6 +90,12 @@ selects the existing OTel provider and the history provider in a stable order
 without adding OTel dependencies to the database or adapter libraries. See
 [the database pack notes](docs/database.md).
 
+The chDB Durable pack observes the lease, immutable publication, head-CAS,
+renewal, and release entry seams without retaining backend or tenant data. Its
+offline Hegel model checks real woven histories using the same command
+vocabulary as the literate Quint model, while an identical plain build proves
+instrumentation erasure. See [the chDB Durable pack notes](docs/chdb-durable.md).
+
 The Mycelium pack targets Samizdat's provider-neutral workflow and selected-edge
 semantic events at compatibility revision
 `dd13b4b933d3db80a319d2c7b27af4ee6767fca5`. It correlates bounded normalized
