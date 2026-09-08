@@ -4,21 +4,48 @@
 
 (def ^:dynamic *action* nil)
 
-(defn call-with-fault [action f]
-  (binding [*action* action]
-    (f)))
-
 (defn- invalid! [message]
   (throw (ex-info message {:kind :chdb-durable/invalid-fault})))
 
-(defn- selected? [join-point phase]
+(defn- validate-effect! [action]
+  (case (:effect action)
+    (nil :crash)
+    (when-not (and (string? (:ready-file action))
+                   (not (empty? (:ready-file action))))
+      (invalid! "Durable crash barrier requires a ready file"))
+
+    :throw
+    (when-not (instance? Throwable (:error action))
+      (invalid! "Durable throw fault requires a Throwable"))
+
+    (invalid! "Unsupported Durable fault effect")))
+
+(defn call-with-fault
+  "Run `f` with one operation-scoped test fault.
+
+  `:hit` selects the matching operation invocation (default 1). `:effect`
+  selects a process crash barrier (default `:crash`) or a typed `:throw` before
+  or after the target. An after-throw is useful for modeling a completed CAS
+  whose caller-visible outcome became ambiguous."
+  [action f]
+  (when-not (and (map? action)
+                 (keyword? (:operation action))
+                 (contains? #{:before :after} (:phase action))
+                 (or (nil? (:hit action))
+                     (and (integer? (:hit action)) (pos? (:hit action))))
+                 (contains? #{nil :crash :throw} (:effect action)))
+    (invalid! "Durable fault action is invalid"))
+  (validate-effect! action)
+  (binding [*action* (assoc action :counts (atom {}))]
+    (f)))
+
+(defn- selected? [join-point phase occurrence]
   (and (= (:operation *action*) (:id join-point))
-       (= (:phase *action*) phase)))
+       (= (:phase *action*) phase)
+       (= (or (:hit *action*) 1) occurrence)))
 
 (defn- crash-barrier! []
   (let [ready-file (:ready-file *action*)]
-    (when-not (and (string? ready-file) (not (empty? ready-file)))
-      (invalid! "Durable crash barrier requires a ready file"))
     (Files/write (Paths/get ready-file (into-array String []))
                  (.getBytes "ready\n" "UTF-8")
                  (into-array OpenOption [StandardOpenOption/CREATE_NEW
@@ -28,13 +55,24 @@
     (Thread/sleep 60000)
     (invalid! "Durable crash barrier was not killed")))
 
+(defn- trigger! []
+  (case (:effect *action*)
+    (nil :crash) (crash-barrier!)
+    :throw (throw (:error *action*))
+    (invalid! "Unsupported Durable fault effect")))
+
 (defn around-control [join-point _args proceed]
-  (when (selected? join-point :before)
-    (crash-barrier!))
-  (let [result (proceed)]
-    (when (selected? join-point :after)
-      (crash-barrier!))
-    result))
+  (if-not (= (:operation *action*) (:id join-point))
+    (proceed)
+    (let [occurrence (get (swap! (:counts *action*) update (:id join-point)
+                                 (fnil inc 0))
+                          (:id join-point))]
+      (when (selected? join-point :before occurrence)
+        (trigger!))
+      (let [result (proceed)]
+        (when (selected? join-point :after occurrence)
+          (trigger!))
+        result))))
 
 (def aspect-provider
   {:schema 1
