@@ -44,6 +44,28 @@
     {:id io.github.chucklehead-dev/jolt-duckdb
      :git/sha "facd634492ff1d984871a0d37122ab527b7648aa"}]}
 
+  io.github.chucklehead-dev/jolt-chdb-durable
+  {:library {:id io.github.chucklehead-dev/jolt-chdb
+             :git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
+             :git/sha "edc86af07d5982a185c4ef953c19c848a719da0e"}
+   :compiler {:id jolt-lang/jolt
+              :git/url "https://github.com/chucklehead-dev/jolt.git"
+              :git/sha "5d56b9e5d295fe0968df07e535c45353050611f7"
+              :branch "integration/aspects-v0.8.3"
+              :chez "10.4.1"}
+   :boundary :durable-control-entry-seams
+   :manifest "META-INF/jolt/aspects/packs/chdb-durable-edc86af.edn"
+   :scenario "scenarios/chdb-durable"
+   :plain-scenario "scenarios/chdb-durable-plain"
+   :effect-evidence
+   {:woven "scenarios/chdb-durable/target/chdb-durable-aspect-scenario.build/effects.edn"
+    :plain "scenarios/chdb-durable-plain/target/chdb-durable-plain-scenario.build/effects.edn"}
+   :coverage #{:acquire :publish-wal :publish-checkpoint :commit-reference
+               :renew :release}
+   :consumers
+   [{:id io.github.chucklehead-dev/jolt-aspect-packs
+     :provider jolt.aspect-packs.chdb-durable.provider/aspect-provider}]}
+
   yogthos/samizdat
   {:git/url "https://github.com/casselc/samizdat.git"
    :git/sha "ff9cfd8cf6bf08c0f61b71cc98eee8c354efa861"

@@ -2,6 +2,7 @@
   (:require [clojure.test :as test]
             [jolt.aspect-packs.checkpoint-history-test]
             [jolt.aspect-packs.checkpoint-replay-test]
+            [jolt.aspect-packs.chdb-durable.provider-test]
             [jolt.aspect-packs.compatibility-test]
             [jolt.aspect-packs.core-async.faults-test]
             [jolt.aspect-packs.core-async.model-test]
@@ -24,6 +25,7 @@
   (let [result (test/run-tests
                 'jolt.aspect-packs.checkpoint-history-test
                 'jolt.aspect-packs.checkpoint-replay-test
+                'jolt.aspect-packs.chdb-durable.provider-test
                 'jolt.aspect-packs.compatibility-test
                 'jolt.aspect-packs.core-async.faults-test
                 'jolt.aspect-packs.core-async.model-test
