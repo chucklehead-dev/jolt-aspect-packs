@@ -152,9 +152,10 @@
   (let [pack (edn/read-string
               (slurp (io/resource
                       "META-INF/jolt/aspects/packs/chdb-durable-edc86af.edn")))
-        target (edn/read-string
-                (slurp (io/file
-                        "../jolt-chdb/resources/META-INF/jolt/aspects/jolt-chdb-durable.edn")))]
+        target-resource
+        (io/resource "META-INF/jolt/aspects/jolt-chdb-durable.edn")
+        target (some-> target-resource slurp edn/read-string)]
+    (is (some? target-resource))
     (is (= (:library pack) (:library target)))
     (is (= provider/seam-revision (get-in pack [:library :version])))
     (is (= (:aspects pack) (:aspects target)))
