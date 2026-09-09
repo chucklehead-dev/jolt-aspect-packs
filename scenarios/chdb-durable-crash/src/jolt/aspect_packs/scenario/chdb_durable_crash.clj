@@ -44,7 +44,7 @@
                  :changes-database-lifecycle false})
    :query-native! (fn [& _] nil)
    :query-bytes-native! (fn [& _] nil)
-   :execute-native! (fn [_ sql] (swap! executed conj sql))})
+   :execute-native! (fn [_ sql _] (swap! executed conj sql))})
 
 (defn- produce! [namespace operation phase ready-file]
   (let [store (backend/object-backend namespace object-id)

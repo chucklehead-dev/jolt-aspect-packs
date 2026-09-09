@@ -1,7 +1,7 @@
 # chDB Durable semantic-history pack
 
 This pack observes the exact Durable control entry seams introduced after
-`edc86af07d5982a185c4ef953c19c848a719da0e`. That revision is an opaque
+`4a0b82119a09fdadb08442cb5d189bdc0474ed86`. That revision is an opaque
 compatibility epoch: it is the parent of the source change that adds the
 declarations and must agree between the target-owned and pack-owned manifests.
 
@@ -12,6 +12,13 @@ The provider records the control vocabulary used by the Durable Quint model:
 - `:commit-attempt`
 - `:renew-attempt`
 - `:release-attempt`
+
+The pack targets the option-bearing terminal arity for WAL and checkpoint
+publication, renewal, and release. jolt-chdb's public convenience arities
+delegate to those terminal arities, while its writer calls them directly to
+carry one shared retry budget. Selecting only the terminal arity therefore
+observes both call shapes exactly once: advising both the convenience wrapper
+and its delegate would emit a nested duplicate operation.
 
 Durable-object identity, writer identity, immutable-object identity, and
 publication-attempt identity are stable only inside one journal and are emitted
@@ -79,9 +86,12 @@ recorded in `targets.edn`:
 ```
 
 The woven lane executes the real in-memory Durable implementation through
-acquire, WAL publish/commit, renew, checkpoint publish/commit, and release. It
-then validates the captured history offline. The plain lane executes the same
-source and proves that no journal events or compiler aspect effects exist.
+acquire, WAL publish/commit, renew, checkpoint publish/commit, and release. The
+compiler report must resolve the option-bearing arities added at jolt-chdb
+`e2c4fd0a613c6fc169097b2cc3d4f7ecac9e2f2c`, with one selected site per logical
+operation. The scenario then validates the captured history offline. The plain
+lane executes the same source and proves that no journal events or compiler
+aspect effects exist.
 
 For application integration, keep the gates layered:
 
