@@ -88,7 +88,7 @@ recorded in `targets.edn`:
 The woven lane executes the real in-memory Durable implementation through
 acquire, WAL publish/commit, renew, checkpoint publish/commit, and release. The
 compiler report must resolve the option-bearing arities added at jolt-chdb
-`e2c4fd0a613c6fc169097b2cc3d4f7ecac9e2f2c`, with one selected site per logical
+`dbc2db22130c7e783739c79bc24691dcbba21906`, with one selected site per logical
 operation. The scenario then validates the captured history offline. The plain
 lane executes the same source and proves that no journal events or compiler
 aspect effects exist.
