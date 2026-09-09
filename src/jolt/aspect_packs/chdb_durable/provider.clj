@@ -3,7 +3,7 @@
             [jolt.aspect-packs.history :as history]))
 
 (def seam-revision
-  "edc86af07d5982a185c4ef953c19c848a719da0e")
+  "4a0b82119a09fdadb08442cb5d189bdc0474ed86")
 
 (defn- writer-summary [journal token]
   (when (and (map? token)

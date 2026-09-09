@@ -35,16 +35,20 @@
                     :now 10 :expires-at 20 :force? false}]
             {:status :acquired :head active :token token :etag "etag-secret"})
     (invoke journal :durable/publish-wal
-            [store token (.getBytes "private-wal-bytes" "UTF-8")]
+            [store token (.getBytes "private-wal-bytes" "UTF-8")
+             {:stopped? (fn [] false) :private "retry-secret"}]
             {:status :published :reference reference :etag "etag-secret"})
     (invoke journal :durable/commit-reference
             [store token {:kind :wal :reference reference
                           :verify-reference! (fn [_ _] true)}]
             {:status :committed :head committed :token token
              :etag "etag-secret"})
-    (invoke journal :durable/renew [store token 30]
+    (invoke journal :durable/renew
+            [store token 30
+             {:stopped? (fn [] false) :private "retry-secret"}]
             {:status :committed :head committed :token token})
-    (invoke journal :durable/release [store token]
+    (invoke journal :durable/release
+            [store token {:stopped? (fn [] false) :private "retry-secret"}]
             {:status :committed :head released :token nil})
     (let [events (history/events journal)
           commands (model/commands events)
@@ -66,7 +70,7 @@
       (is (nil? (get-in commands [4 :result :head :writer])))
       (doseq [secret ["store-secret" "owner-secret" "instance-secret"
                       "private-wal-bytes" "deadbeef" "digest-secret"
-                      "etag-secret"]]
+                      "etag-secret" "retry-secret"]]
         (is (not (.contains printed secret))))
       (is (true? (history/assert-complete! journal))))))
 
@@ -148,21 +152,25 @@
       (is (= events (model/check! events)))
       (is (thrown? Exception (model/check! mutated))))))
 
-(deftest provider-and-target-manifests-agree-on-the-opaque-seam-revision
+(deftest pack-targets-terminal-retry-arities-within-the-opaque-seam-revision
   (let [pack (edn/read-string
               (slurp (io/resource
-                      "META-INF/jolt/aspects/packs/chdb-durable-edc86af.edn")))
+                      "META-INF/jolt/aspects/packs/chdb-durable-4a0b821.edn")))
         target-resource
         (io/resource "META-INF/jolt/aspects/jolt-chdb-durable.edn")
         target (some-> target-resource slurp edn/read-string)]
     (is (some? target-resource))
     (is (= (:library pack) (:library target)))
     (is (= provider/seam-revision (get-in pack [:library :version])))
-    (is (= (:aspects pack) (:aspects target)))
-    (is (= #{:durable/acquire :durable/publish-wal
-             :durable/publish-checkpoint :durable/commit-reference
-             :durable/renew :durable/release}
-           (set (map :id (:aspects pack)))))))
+    (is (= (:aspects target) (:aspects pack)))
+    (is (= {:durable/acquire 2
+            :durable/publish-wal 4
+            :durable/publish-checkpoint 4
+            :durable/commit-reference 3
+            :durable/renew 4
+            :durable/release 3}
+           (into {} (map (juxt :id #(get-in % [:match :arity])))
+                 (:aspects pack))))))
 
 (deftest absent-journal-is-inert
   (let [result (Object.)

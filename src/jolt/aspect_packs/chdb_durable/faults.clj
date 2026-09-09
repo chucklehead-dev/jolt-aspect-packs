@@ -78,7 +78,7 @@
   {:schema 1
    :libraries
    {'io.github.chucklehead-dev/jolt-chdb
-    "edc86af07d5982a185c4ef953c19c848a719da0e"}
+    "4a0b82119a09fdadb08442cb5d189bdc0474ed86"}
    :roles
    {:durable/control
     {:fn 'jolt.aspect-packs.chdb-durable.faults/around-control
