@@ -28,28 +28,33 @@
 
 (defn- head? [value]
   (and (map? value)
-       (contains? #{#{:generation :writer :manifest-sequence}
-                    #{:generation :writer :manifest-sequence :last-reference}}
+       (contains? #{#{:generation :writer :lease-expires-at :manifest-sequence}
+                    #{:generation :writer :lease-expires-at :manifest-sequence
+                       :last-reference}}
                   (set (keys value)))
        (integer? (:generation value))
        (pos? (:generation value))
        (or (nil? (:writer value)) (opaque-writer? (:writer value)))
+       (if (:writer value)
+         (number? (:lease-expires-at value))
+         (nil? (:lease-expires-at value)))
        (integer? (:manifest-sequence value))
        (not (neg? (:manifest-sequence value)))
        (or (not (contains? value :last-reference))
            (reference? (:last-reference value)))))
 
 (defn- input? [{:keys [command writer kind reference payload-size now
-                        expires-at force? durable-object] :as input}]
+                        expires-at clock-skew force? durable-object] :as input}]
   (and
    (map? input)
    (opaque-writer? durable-object)
    (case command
      :acquire
-     (and (= #{:command :writer :now :expires-at :force? :durable-object}
+     (and (= #{:command :writer :now :expires-at :clock-skew :force?
+               :durable-object}
              (set (keys input)))
           (opaque-writer? writer) (number? now) (number? expires-at)
-          (boolean? force?))
+          (number? clock-skew) (not (neg? clock-skew)) (boolean? force?))
 
      :publish
      (and (= #{:command :writer :kind :payload-size :durable-object}
@@ -76,6 +81,21 @@
           (writer? writer))
 
      false)))
+
+(defn- forced-live-warning? [warning generation]
+  (and (map? warning)
+       (= #{:event :severity :protocol-version :lease-generation}
+          (set (keys warning)))
+       (= :durable/forced-live-takeover (:event warning))
+       (= :warning (:severity warning))
+       (= 1 (:protocol-version warning))
+       (= generation (:lease-generation warning))))
+
+(defn- warning-vector? [warnings generation]
+  (and (vector? warnings)
+       (or (empty? warnings)
+           (and (= 1 (count warnings))
+                (forced-live-warning? (first warnings) generation)))))
 
 (def semantic-invocations
   (trace/rule
@@ -109,9 +129,11 @@
                      (case operation
                        :durable/acquire
                        (and (contains? #{:acquired :reconciled} (:outcome value))
-                            (= #{:outcome :head :durable-object}
+                            (= #{:outcome :head :warnings :durable-object}
                                (set (keys value)))
-                            (head? (:head value)))
+                            (head? (:head value))
+                            (warning-vector? (:warnings value)
+                                             (get-in value [:head :generation])))
                        (:durable/publish-wal :durable/publish-checkpoint)
                        (and (contains? #{:published :already-published
                                         :reconciled}
@@ -138,10 +160,32 @@
               value (:value event)
               next-head (:head value)
               prior-head (:head state)
+              live-forced?
+              (and (= :durable/acquire operation)
+                   prior-head
+                   (some? (:writer prior-head))
+                   (:force? input)
+                   (<= (:now input)
+                       (+ (:lease-expires-at prior-head)
+                          (:clock-skew input))))
               valid?
               (case operation
                 :durable/acquire
                 (and (= (:writer input) (:writer next-head))
+                     (== (:expires-at input) (:lease-expires-at next-head))
+                     (if prior-head
+                       (= (if live-forced?
+                            [{:event :durable/forced-live-takeover
+                              :severity :warning
+                              :protocol-version 1
+                              :lease-generation (:generation next-head)}]
+                            [])
+                          (:warnings value))
+                       ;; A journal may begin after the object already exists,
+                       ;; so without a prior observed head the event shape is
+                       ;; checkable but live-versus-expired is not.
+                       (warning-vector? (:warnings value)
+                                        (:generation next-head)))
                      (or (nil? prior-head)
                          (and (> (:generation next-head)
                                  (:generation prior-head))
@@ -166,14 +210,17 @@
 
                 :durable/renew
                 (and (= (:generation (:writer input)) (:generation next-head))
-                     (or (nil? prior-head) (= prior-head next-head)))
+                     (== (:expires-at input) (:lease-expires-at next-head))
+                     (or (nil? prior-head)
+                         (= (dissoc prior-head :lease-expires-at)
+                            (dissoc next-head :lease-expires-at))))
 
                 :durable/release
                 (and (= (:generation (:writer input)) (:generation next-head))
                      (nil? (:writer next-head))
                      (or (nil? prior-head)
-                         (= (dissoc prior-head :writer)
-                            (dissoc next-head :writer))))
+                         (= (dissoc prior-head :writer :lease-expires-at)
+                            (dissoc next-head :writer :lease-expires-at))))
 
                 false)]
           (cond-> (assoc state :valid? (and (:valid? state) valid?))
