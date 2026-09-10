@@ -11,10 +11,15 @@
    :site-id (str "test-site-" (name operation))
    :build-identity "chdb-durable-provider-test-build"})
 
-(defn- head [generation owner instance sequence last-reference]
-  {"lease" {"generation" generation "owner" owner "instance" instance}
-   "manifest" (cond-> {"seq" sequence "base" nil "wal" []}
-                last-reference (assoc "wal" [last-reference]))})
+(defn- head
+  ([generation owner instance sequence last-reference]
+   (head generation owner instance sequence last-reference
+         (when owner 20)))
+  ([generation owner instance sequence last-reference expires-at]
+   {"lease" {"generation" generation "owner" owner "instance" instance
+             "expires_at" expires-at}
+    "manifest" (cond-> {"seq" sequence "base" nil "wal" []}
+                 last-reference (assoc "wal" [last-reference]))}))
 
 (defn- invoke [journal operation args result]
   (binding [history/*journal* journal history/*context-id* :durable-test]
@@ -29,11 +34,13 @@
                    "sha256" "digest-secret"}
         active (head 1 "owner-secret" "instance-secret" 0 nil)
         committed (head 1 "owner-secret" "instance-secret" 1 reference)
+        renewed (head 1 "owner-secret" "instance-secret" 1 reference 30)
         released (head 1 nil nil 1 reference)]
     (invoke journal :durable/acquire
             [store {:owner "owner-secret" :instance "instance-secret"
                     :now 10 :expires-at 20 :force? false}]
-            {:status :acquired :head active :token token :etag "etag-secret"})
+            {:status :acquired :head active :token token :etag "etag-secret"
+             :warnings []})
     (invoke journal :durable/publish-wal
             [store token (.getBytes "private-wal-bytes" "UTF-8")
              {:stopped? (fn [] false) :private "retry-secret"}]
@@ -46,7 +53,7 @@
     (invoke journal :durable/renew
             [store token 30
              {:stopped? (fn [] false) :private "retry-secret"}]
-            {:status :committed :head committed :token token})
+            {:status :committed :head renewed :token token})
     (invoke journal :durable/release
             [store token {:stopped? (fn [] false) :private "retry-secret"}]
             {:status :committed :head released :token nil})
@@ -79,15 +86,15 @@
         store-a {:root "/private/a"}
         store-b {:root "/private/b"}
         active-a (head 1 "owner-a" "instance-a" 0 nil)
-        active-b (head 1 "owner-b" "instance-b" 0 nil)]
+        active-b (head 1 "owner-b" "instance-b" 0 nil 21)]
     (invoke journal :durable/acquire
             [store-a {:owner "owner-a" :instance "instance-a"
                       :now 10 :expires-at 20 :force? false}]
-            {:status :acquired :head active-a})
+            {:status :acquired :head active-a :warnings []})
     (invoke journal :durable/acquire
             [store-b {:owner "owner-b" :instance "instance-b"
                       :now 11 :expires-at 21 :force? false}]
-            {:status :acquired :head active-b})
+            {:status :acquired :head active-b :warnings []})
     (let [events (history/events journal)
           object-a (get-in events [0 :input :durable-object])
           object-b (get-in events [2 :input :durable-object])
@@ -138,12 +145,12 @@
   (let [journal (history/journal)
         token {:owner "owner" :instance "instance" :generation 1}
         reference {"key" "wal/1-1-deadbeef.jsonl" "size" 1 "sha256" "x"}
-        active (head 1 "owner" "instance" 0 nil)
+        active (head 1 "owner" "instance" 0 nil 2)
         committed (head 1 "owner" "instance" 1 reference)]
     (invoke journal :durable/acquire
             [nil {:owner "owner" :instance "instance"
                   :now 1 :expires-at 2}]
-            {:status :acquired :head active})
+            {:status :acquired :head active :warnings []})
     (invoke journal :durable/commit-reference
             [nil token {:kind :wal :reference reference}]
             {:status :committed :head committed})
@@ -151,6 +158,113 @@
           mutated (assoc-in events [3 :value :head :manifest-sequence] 2)]
       (is (= events (model/check! events)))
       (is (thrown? Exception (model/check! mutated))))))
+
+(deftest forced-live-warning-is-exact-private-and-observational
+  (let [journal (history/journal)
+        store {:private "force-store-secret"}
+        active (head 1 "old-owner-secret" "old-instance-secret" 0 nil 200)
+        forced-head (head 2 "new-owner-secret" "new-instance-secret" 0 nil 300)
+        warning {:event :durable/forced-live-takeover
+                 :severity :warning
+                 :protocol-version 1
+                 :lease-generation 2}
+        forced-result {:status :acquired :head forced-head
+                       :token {:owner "new-owner-secret"
+                               :instance "new-instance-secret"
+                               :generation 2}
+                       :etag "force-etag-secret"
+                       :warnings [warning]}
+        calls (atom 0)]
+    (invoke journal :durable/acquire
+            [store {:owner "old-owner-secret" :instance "old-instance-secret"
+                    :now 100 :expires-at 200 :force? false}]
+            {:status :acquired :head active :warnings []})
+    (let [returned
+          (binding [history/*journal* journal history/*context-id* :durable-test]
+            (provider/around-control
+             (join-point :durable/acquire)
+             [store {:owner "new-owner-secret" :instance "new-instance-secret"
+                     :now 101 :expires-at 300 :clock-skew 0 :force? true
+                     :private "force-options-secret"}]
+             #(do (swap! calls inc) forced-result)))
+          events (history/events journal)
+          warning-path [3 :value :warnings]
+          suppressed (assoc-in events warning-path [])
+          duplicated (assoc-in events warning-path [warning warning])
+          malformed (assoc-in events warning-path
+                              [(assoc warning :severity :info)])
+          printed (pr-str events)]
+      (is (identical? forced-result returned))
+      (is (= 1 @calls))
+      (is (= [warning] (get-in events warning-path)))
+      (is (= events (model/check! events)))
+      (doseq [mutant [suppressed duplicated malformed]]
+        (is (thrown? Exception (model/check! mutant))))
+      (doseq [secret ["force-store-secret" "old-owner-secret"
+                      "old-instance-secret" "new-owner-secret"
+                      "new-instance-secret" "force-etag-secret"
+                      "force-options-secret"]]
+        (is (not (.contains printed secret))))
+
+      (let [malformed-journal (history/journal)]
+        (invoke malformed-journal :durable/acquire
+                [store {:owner "old-owner-secret"
+                        :instance "old-instance-secret"
+                        :now 100 :expires-at 200 :force? false}]
+                {:status :acquired :head active :warnings []})
+        (invoke malformed-journal :durable/acquire
+                [store {:owner "new-owner-secret"
+                        :instance "new-instance-secret"
+                        :now 101 :expires-at 300 :force? true}]
+                (assoc forced-result :warnings
+                       [(assoc warning :private "warning-secret")]))
+        (let [malformed-events (history/events malformed-journal)]
+          (is (= [{:event :durable/malformed-warning}]
+                 (get-in malformed-events warning-path)))
+          (is (thrown? Exception (model/check! malformed-events)))
+          (is (not (.contains (pr-str malformed-events) "warning-secret")))))
+
+      (let [expired-journal (history/journal)]
+        (invoke expired-journal :durable/acquire
+                [store {:owner "old-owner-secret"
+                        :instance "old-instance-secret"
+                        :now 100 :expires-at 200 :force? false}]
+                {:status :acquired :head active :warnings []})
+        (invoke expired-journal :durable/acquire
+                [store {:owner "new-owner-secret"
+                        :instance "new-instance-secret"
+                        :now 201 :expires-at 300 :force? true}]
+                (assoc forced-result :warnings []))
+        (let [expired-events (history/events expired-journal)
+              spurious (assoc-in expired-events warning-path [warning])]
+          (is (= expired-events (model/check! expired-events)))
+          (is (thrown? Exception (model/check! spurious))))))))
+
+(deftest forced-live-warning-remains-required-after-a-longer-observed-prefix
+  (let [journal (history/journal)
+        store {:private "prefix-store-secret"}
+        active (head 1 "old-owner" "old-instance" 0 nil 200)
+        renewed (head 1 "old-owner" "old-instance" 0 nil 250)
+        forced (head 2 "new-owner" "new-instance" 0 nil 350)
+        warning {:event :durable/forced-live-takeover
+                 :severity :warning
+                 :protocol-version 1
+                 :lease-generation 2}
+        token {:owner "old-owner" :instance "old-instance" :generation 1}]
+    (invoke journal :durable/acquire
+            [store {:owner "old-owner" :instance "old-instance"
+                    :now 100 :expires-at 200}]
+            {:status :acquired :head active :warnings []})
+    (invoke journal :durable/renew [store token 250]
+            {:status :committed :head renewed})
+    (invoke journal :durable/acquire
+            [store {:owner "new-owner" :instance "new-instance"
+                    :now 201 :expires-at 350 :force? true}]
+            {:status :acquired :head forced :warnings [warning]})
+    (let [events (history/events journal)
+          suppressed (assoc-in events [5 :value :warnings] [])]
+      (is (= events (model/check! events)))
+      (is (thrown? Exception (model/check! suppressed))))))
 
 (deftest pack-targets-terminal-retry-arities-within-the-opaque-seam-revision
   (let [pack (edn/read-string

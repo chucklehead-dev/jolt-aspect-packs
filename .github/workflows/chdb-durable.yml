@@ -12,21 +12,44 @@ permissions:
 jobs:
   provider-model:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       JOLT_CACHE_DIR: ${{ github.workspace }}/.jolt-cache-v0.8.3
       JOLT_GITLIBS_DIR: ${{ github.workspace }}/.jolt-gitlibs-v0.8.3
     steps:
       - uses: actions/checkout@v4
-      - name: Install Jolt v0.8.3
+      - name: Check out the pinned aspect-capable Jolt compiler
+        uses: actions/checkout@v4
+        with:
+          repository: jolt-lang/jolt
+          ref: 5d56b9e5d295fe0968df07e535c45353050611f7
+          path: .ci/jolt
+          submodules: recursive
+          fetch-depth: 0
+      - name: Restore bounded compiler and dependency caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .ci/jolt/.cache
+            ${{ env.JOLT_CACHE_DIR }}
+            ${{ env.JOLT_GITLIBS_DIR }}
+          key: ${{ runner.os }}-jolt-5d56b9e5-chdb-durable-${{ hashFiles('deps.edn', 'scenarios/chdb-durable/deps.edn', 'scenarios/chdb-durable-plain/deps.edn') }}
+      - name: Install the compiler's UUID link dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y uuid-dev
+      - name: Prepare the pinned compiler toolchain
         shell: bash
         run: |
           set -euo pipefail
-          install_dir="$RUNNER_TEMP/jolt-bin"
-          curl -fsSL https://raw.githubusercontent.com/jolt-lang/jolt/v0.8.3/install \
-            | bash -s -- --dir "$install_dir" --version 0.8.3
-          echo "$install_dir" >> "$GITHUB_PATH"
-      - name: Assert Jolt version
-        run: test "$(jolt --version)" = "jolt v0.8.3"
+          make -C .ci/jolt -j1 deps
+          test "$(.ci/jolt/bin/jolt --version)" = \
+            "jolt v0.8.3-41-g5d56b9e5"
       - name: Durable provider and offline model
-        run: jolt -Srepro -M:chdb-durable-test
+        run: .ci/jolt/bin/jolt -Srepro -M:chdb-durable-test
+      - name: Woven warning model and plain erasure
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -j1 JOLT_ASPECT_JOLT="$GITHUB_WORKSPACE/.ci/jolt/bin/jolt" \
+            chdb-durable-aspect-smoke chdb-durable-plain-smoke

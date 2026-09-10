@@ -47,9 +47,9 @@
   io.github.chucklehead-dev/jolt-chdb-durable
   {:library {:id io.github.chucklehead-dev/jolt-chdb
              :git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
-             :git/sha "dbc2db22130c7e783739c79bc24691dcbba21906"}
-   :compiler {:id jolt-lang/jolt
-              :git/url "https://github.com/chucklehead-dev/jolt.git"
+             :git/sha "e7e8bbf0ce17f7d3a3a0878c7305fbbf7c7c8867"}
+    :compiler {:id jolt-lang/jolt
+              :git/url "https://github.com/jolt-lang/jolt.git"
               :git/sha "5d56b9e5d295fe0968df07e535c45353050611f7"
               :branch "integration/aspects-v0.8.3"
               :chez "10.4.1"}

@@ -29,6 +29,20 @@ the protocol's fencing and ordering coordinates. The public event API never expo
 owner/instance strings, SQL or WAL bytes, filesystem paths, full object keys,
 digests, ETags, credentials, exception messages, or unknown head fields.
 
+Acquisition terminals also carry a closed `:warnings` vector copied from the
+target's already-redacted result. Its only admitted member is exactly
+`{:event :durable/forced-live-takeover :severity :warning
+:protocol-version 1 :lease-generation N}`. Warning observation runs after
+`proceed`, never changes the returned value, and never participates in lease
+CAS. When the journal already observed the prior head, the trace fold has the
+prior expiry plus acquisition `now`, `clock-skew`, and `force?` facts needed to
+require exactly one warning for a live forced takeover and none for a released
+or expired lease. If capture begins at the takeover, the prior lease is absent;
+that trace can validate only the warning's exact closed shape, not infer
+live-versus-expired status. The woven scenario deliberately records both the
+live prior lease and its forced takeover, making suppression testable without
+retaining owner, instance, backend, or option data.
+
 `jolt.aspect-packs.chdb-durable.model/check!` runs outside advice. It checks the
 canonical Hegel envelope, contiguous sequence, closed synchronous lifecycles,
 context and causal links, bounded command/terminal shapes, and one pure Durable
@@ -86,12 +100,24 @@ recorded in `targets.edn`:
 ```
 
 The woven lane executes the real in-memory Durable implementation through
-acquire, WAL publish/commit, renew, checkpoint publish/commit, and release. The
-compiler report must resolve the option-bearing arities added at jolt-chdb
-`dbc2db22130c7e783739c79bc24691dcbba21906`, with one selected site per logical
-operation. The scenario then validates the captured history offline. The plain
+an ordinary acquire, a forced-live acquire and warning, WAL publish/commit,
+renew, checkpoint publish/commit, and release. The
+compiler report must resolve the option-bearing arities and closed warning
+result at jolt-chdb `e7e8bbf0ce17f7d3a3a0878c7305fbbf7c7c8867`,
+with one selected site per logical
+operation. The scenario then validates the captured history offline. Warning
+observation is bounded evidence for this causally complete scenario, not a
+claim about traces that begin after the prior lease state. The plain
 lane executes the same source and proves that no journal events or compiler
 aspect effects exist.
+
+`.github/workflows/chdb-durable.yml` runs the focused provider/model tests and
+then serializes `chdb-durable-aspect-smoke` and
+`chdb-durable-plain-smoke` in one bounded job. It checks out the exact compiler
+SHA from `targets.edn`, provisions its pinned toolchain, resolves the immutable
+target SHA, and caches only compiler/dependency state. Generated scenarios are
+rebuilt so CI requires the woven warning/privacy model and compiler-effect
+report, then separately proves plain-build erasure.
 
 For application integration, keep the gates layered:
 
