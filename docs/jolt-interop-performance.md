@@ -44,17 +44,46 @@ Worth checking whether `loop`/`recur` is emitting a closure call per iteration
 rather than a jump, and whether the loop variables are being boxed despite
 `unchecked-*` arithmetic.
 
-## Finding 2 — `.indexOf` is a Scheme loop, not `memchr`
+## Finding 2 — `.indexOf` and `.replace` leave 2.7-9.3x on the table — FIXED
 
-`.indexOf` on a character runs at 451 M chars/s, or 2.2 ns per character. A
-`memchr` over the same buffer runs at several GB/s, so there is roughly an
-order of magnitude available by binding the C routine — or by using a
-bytevector representation where one is applicable.
+`.indexOf` is the only primitive that can prove a character *absent*, and
+proving absence is what gates every fast path, so its cost sets the ceiling for
+escapers and validators.
 
-This matters more than it looks, because `.indexOf` is the only primitive that
-can prove a character *absent*, and proving absence is what gates every fast
-path. Proving that 27 rarely-used control characters are absent from a
-statement costs 27 scans; at `memchr` speed that would be noise.
+**A fix is measured and proposed in casselc/jolt#70.** Three changes to
+`host/chez/java/natives-str.ss`, both binaries built from the same commit so
+the deltas are attributable:
+
+| operation | before | after | |
+| --- | ---: | ---: | ---: |
+| `.indexOf` char, absent | 219 M chars/s | 596 M | 2.7x |
+| `.indexOf` string, absent | 80 M chars/s | 595 M | 7.5x |
+| `.replace`, absent needle | 62 M chars/s | 578 M | 9.3x |
+| `.replace`, 15,360 matches | 59 M chars/s | 142 M | 2.4x |
+
+- `str-char-index` ran with `optimize-level 2` bounds and type checks on
+  `string-ref` inside the loop, though the loop invariant already proves the
+  index in range. Unsafe primitives in the body only.
+- `str-index-of` sent every needle through the substring matcher, a procedure
+  call at each non-matching position. A one-character needle — every
+  `(.replace s "\"" ...)` — needs no matcher at all.
+- `str-replace-literal` tested every position and wrote its result **one
+  character at a time** to an output string port. Jumping to each match and
+  copying the span before it in one `put-string` is where the absent-needle
+  9.3x comes from: `.replace` used as a conditional escape no longer walks and
+  rebuilds the whole string to discover it has nothing to do.
+
+A real `memchr` binding was considered and rejected: Chez strings are UTF-32,
+so it cannot be applied without a representation change or unsupported access
+to moving GC memory. The unsafe-primitive loop reaches 603 M chars/s in raw
+Chez against 231 M for the checked one, which is most of the available gap
+without leaving supported ground.
+
+Verified byte-identical to the v0.8.6 release over a deterministic 4,000-case
+corpus and 25 edge cases; gates `corpus`, `unit` and `cts` pass.
+
+End to end on a Durable chDB WAL writer, v0.8.6 with and without the patch,
+interleaved on one host: 13,484 -> 17,003 rows/s.
 
 ## Finding 3 — `re-find` over a character class is barely faster than a loop
 
@@ -65,8 +94,14 @@ is a table lookup per byte and should run within a small factor of `memchr`.
 This is the one primitive that can answer "does this string contain any
 character from this set" in a single pass, so its cost sets the floor for
 validators, escapers and lexers. In the case that prompted this write-up it is
-now the single largest remaining item in a database WAL writer, at 5 ms of a
-20 ms batch.
+now **the** bottleneck: with casselc/jolt#70 applied, the WAL escaper's
+`.replace` chain drops from 5.6 ms to 2.0 ms and the unchanged character-class
+search becomes 5.5 ms of a 7.9 ms stage.
+
+Note what that implies. Once `.indexOf` is 2.7x faster, proving the 27 exotic
+control characters absent one needle at a time costs 3.8 ms — **less** than the
+single character-class search that replaced it. A primitive meant to do this
+job in one pass is slower than 27 separate passes.
 
 ## Finding 4 — `data.json/write-str` is 60× slower than a native replace chain
 
