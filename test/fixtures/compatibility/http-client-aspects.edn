@@ -11,7 +11,7 @@
    :contract :replace-args-v1
    :id :http-client.core/request
    :library {:id jolt-lang/http-client
-             :version "12b78edb9024d200083cf77d61fa56709ab23dd7"}
+             :version "v0.0.10+http-client-core-aspect.1"}
    :match {:arity 1 :entry clj-http.lite.core/request}
    :resource "META-INF/jolt/aspects/http-client-core.edn"
    :sites [{:arity 1
@@ -19,8 +19,9 @@
             :entry clj-http.lite.core/request
             :ordinal 1
             :position {:column 1 :line 67}
+            :site-id "v1-1037816629-2526917182-205"
             :within "clj-http.lite.core"}]}]
  :control-enabled? false
- :identity "v1-426059544-1592632893-1076"
+ :identity "v1-1489842689-3807500805-1074"
  :schema 1
  :weaver "jolt.aspect-ir/v1"}

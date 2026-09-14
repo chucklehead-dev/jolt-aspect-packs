@@ -13,6 +13,11 @@
   (and (string? value)
        (boolean (re-matches #"[0-9a-f]{40}" value))))
 
+(defn- compatibility-id? [value]
+  (and (string? value)
+       (boolean
+        (re-matches #"[0-9A-Za-z][0-9A-Za-z.+_-]{0,127}" value))))
+
 (defn- problem [code expected actual]
   {:code code :expected expected :actual actual})
 
@@ -36,8 +41,9 @@
             :let [value (get-in entry path)]
             :when (not (full-sha? value))]
         (problem :entry/full-sha path value))
-      (when-not (full-sha? (get-in entry [:seam :id]))
-        [(problem :entry/seam-id :full-sha (get-in entry [:seam :id]))])
+      (when-not (compatibility-id? (get-in entry [:seam :id]))
+        [(problem :entry/seam-id :bounded-compatibility-id
+                  (get-in entry [:seam :id]))])
       (when-not (= :exactly-one (get-in entry [:seam :match]))
         [(problem :entry/match :exactly-one (get-in entry [:seam :match]))])
       (when-not (= :not-consulted (get-in entry [:age :clock]))
@@ -105,6 +111,7 @@
                 [:report/provider (get-in entry [:pack :provider])
                  (get-in aspect [:consumers 0 :provider])]
                 [:report/sites (:sites expected) (count (:sites aspect))]
+                [:report/site-id (:site-id expected) (:site-id site)]
                 [:report/site-entry (:entry selector) (:entry site)]
                 [:report/site-arity (:arity selector) (:arity site)]]]
     (vec (for [[code wanted actual] checks

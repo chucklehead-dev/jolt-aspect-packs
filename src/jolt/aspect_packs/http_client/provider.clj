@@ -3,7 +3,7 @@
             [jolt.aspect-packs.history :as history]))
 
 (def target-revision
-  "12b78edb9024d200083cf77d61fa56709ab23dd7")
+  "v0.0.10+http-client-core-aspect.1")
 
 (defn- path-only
   [uri]
@@ -41,4 +41,3 @@
    :roles {:http/client
            {:fn 'jolt.aspect-packs.http-client.provider/around-request
             :contract :args-v1}}})
-

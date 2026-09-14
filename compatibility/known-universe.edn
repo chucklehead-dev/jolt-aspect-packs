@@ -3,28 +3,28 @@
  :entries
  [{:id :otel/http-client
    :status :validated
-   :age {:validated-on [2026 8 28]
-         :review-after [2026 11 26]
+   :age {:validated-on [2026 9 13]
+         :review-after [2026 12 12]
          :clock :not-consulted}
    :observation {:clean true}
 
    :pack {:id io.github.chucklehead-dev/jolt-otel-instrumentation-http-client
           :git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-http-client.git"
-          :git/sha "40679054dc4786e43577cb9788f69db0f9a2a401"
+          :git/sha "30f5c94859321f3b3938437619a688766d0295d0"
           :provider otel.instrumentation.http-client/aspect-provider
           :manifest "META-INF/jolt/aspects/http-client-core.edn"}
    :target {:id jolt-lang/http-client
             :git/url "https://github.com/casselc/http-client.git"
-            :git/sha "a00979f5e55bc8deb98291993643ff1ccf50a57b"
+            :git/sha "eab6b78d5957f88690faf6768360572a3f185341"
             :upstream {:git/url "https://github.com/jolt-lang/http-client.git"
-                       :git/sha "04825632ed96a77a1c6ba1921c0a31280a3daade"}}
+                       :git/sha "b98833b8338b66d435cdbffa480ba2b59c005a2e"}}
    :compiler {:id jolt-lang/jolt
-              :git/sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
+              :git/sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
               :chez "10.4.1"}
 
    ;; This is the source seam compatibility id published by the target. It is
    ;; deliberately distinct from the target repository revision above.
-   :seam {:id "12b78edb9024d200083cf77d61fa56709ab23dd7"
+   :seam {:id "v0.0.10+http-client-core-aspect.1"
           :library jolt-lang/http-client
           :selector {:entry clj-http.lite.core/request
                      :arity 1}
@@ -34,9 +34,10 @@
    {:report {:path "test-app/target/http-client-aspects.edn"
              :schema 1
              :weaver "jolt.aspect-ir/v1"
-             :build-identity "v1-426059544-1592632893-1076"
+             :build-identity "v1-1489842689-3807500805-1074"
              :aspects 1
              :sites 1
+             :site-id "v1-1037816629-2526917182-205"
              :aspect-id :http-client.core/request
              :advice otel.instrumentation.http-client/around
              :contract :replace-args-v1}

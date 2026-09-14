@@ -85,11 +85,12 @@
 
   jolt-lang/http-client
  {:git/url "https://github.com/casselc/http-client.git"
-   :git/sha "12b78edb9024d200083cf77d61fa56709ab23dd7"
+   :git/sha "eab6b78d5957f88690faf6768360572a3f185341"
    :compiler {:id jolt-lang/jolt
-              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
+              :git/sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
               :chez "10.4.1"}
-   :manifest "META-INF/jolt/aspects/packs/http-client-12b78ed.edn"
+   :seam-revision "v0.0.10+http-client-core-aspect.1"
+   :manifest "META-INF/jolt/aspects/packs/http-client-eab6b78.edn"
    :scenario "scenarios/http-client"
    :effect-evidence
    {:woven "scenarios/http-client/target/http-client-aspect-scenario.build/effects.edn"}}

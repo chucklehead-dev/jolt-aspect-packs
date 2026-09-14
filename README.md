@@ -56,11 +56,16 @@ provenance and its existing dependency/setup-action pins remain unchanged.
 
 ## Current pack
 
-The first pack targets the `jolt-lang/http-client` library identity at
-`12b78edb9024d200083cf77d61fa56709ab23dd7`. Its library-specific, non-OTel
+The first pack targets the merged `casselc/http-client` revision recorded in
+`targets.edn` and its library-owned
+`v0.0.10+http-client-core-aspect.1` compatibility identity. Its
+library-specific, non-OTel
 history provider
 records synchronous request invocation, completion, exception, and nested
 parentage while excluding headers, bodies, query strings, and server names.
+The target retains strict TLS EOF handling, framed-response completion, and
+idempotency-gated stale-connection retries; this pack observes the existing
+request entry seam and adds no transport behavior.
 
 The second pack targets Burin's independently authored Glitter list-box
 reorder lifecycle. It records opaque child/sibling identity and validates the

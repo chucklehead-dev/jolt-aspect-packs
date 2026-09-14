@@ -9,10 +9,10 @@
   {:universe (compatibility/read-edn universe-path)
    :report (compatibility/read-edn report-path)
    :observation
-   {:pack-sha "40679054dc4786e43577cb9788f69db0f9a2a401"
-    :target-sha "a00979f5e55bc8deb98291993643ff1ccf50a57b"
-    :upstream-sha "04825632ed96a77a1c6ba1921c0a31280a3daade"
-    :compiler-sha "574b6c90ea4f0f4f2072f297614c5d603d5894d3"
+   {:pack-sha "30f5c94859321f3b3938437619a688766d0295d0"
+    :target-sha "eab6b78d5957f88690faf6768360572a3f185341"
+    :upstream-sha "b98833b8338b66d435cdbffa480ba2b59c005a2e"
+    :compiler-sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
     :pack-clean? true
     :target-clean? true
     :compiler-clean? true}
@@ -59,6 +59,23 @@
                                     report fixtures)]
     (is (= :incompatible (:status result)))
     (is (some #(= :report/sites (:code %)) (:problems result)))))
+
+(deftest stale-site-identity-cannot-pass
+  (let [{:keys [universe report observation fixtures]} (fixture)
+        report (assoc-in report [:aspects 0 :sites 0 :site-id] "stale-site")
+        result (compatibility/check universe :otel/http-client observation
+                                    report fixtures)]
+    (is (= :incompatible (:status result)))
+    (is (some #(= :report/site-id (:code %)) (:problems result)))))
+
+(deftest malformed-source-compatibility-id-is-rejected
+  (let [{:keys [universe report observation fixtures]} (fixture)
+        universe (assoc-in universe [:entries 0 :seam :id]
+                           "invalid compatibility id")
+        result (compatibility/check universe :otel/http-client observation
+                                    report fixtures)]
+    (is (= :incompatible (:status result)))
+    (is (= :entry/seam-id (-> result :problems first :code)))))
 
 (deftest compiled-plain-woven-differential-is-required
   (let [{:keys [universe report observation fixtures]} (fixture)

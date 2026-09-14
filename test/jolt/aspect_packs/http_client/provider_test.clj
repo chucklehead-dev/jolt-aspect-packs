@@ -89,9 +89,12 @@
       (is (= events (model/check! events))))))
 
 (deftest manifest-and-provider-agree-on-pinned-target
-  (let [manifest
+  (let [targets (edn/read-string (slurp "targets.edn"))
+        target (get-in targets [:targets 'jolt-lang/http-client])
+        scenario (edn/read-string (slurp "scenarios/http-client/deps.edn"))
+        manifest
         (edn/read-string
-         (slurp "resources/META-INF/jolt/aspects/packs/http-client-12b78ed.edn"))]
+         (slurp "resources/META-INF/jolt/aspects/packs/http-client-eab6b78.edn"))]
     (is (= 1 (:schema manifest)))
     (is (= 'jolt-lang/http-client (get-in manifest [:library :id])))
     (is (= provider/target-revision
@@ -99,4 +102,16 @@
     (is (= provider/target-revision
            (get-in provider/aspect-provider
                    [:libraries 'jolt-lang/http-client])))
+    (is (= "eab6b78d5957f88690faf6768360572a3f185341"
+           (:git/sha target)
+           (get-in scenario [:deps 'jolt-lang/http-client :git/sha])))
+    (is (= provider/target-revision (:seam-revision target)))
+    (is (= {:id 'jolt-lang/jolt
+            :git/sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
+            :chez "10.4.1"}
+           (:compiler target)))
+    (is (= "META-INF/jolt/aspects/packs/http-client-eab6b78.edn"
+           (:manifest target)
+           (get-in scenario [:jolt/build :aspects 0 :resource])))
+    (is (= "scenarios/http-client" (:scenario target)))
     (is (= 1 (get-in manifest [:aspects 0 :expect :matches])))))

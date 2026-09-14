@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Requalify the provider-neutral HTTP-client pack against the merged
+  `casselc/http-client` v0.0.10 convergence line and its library-owned
+  compatibility identity. The scenario still selects exactly one request
+  entry seam and adds no transport or retry behavior. Refresh the compatibility
+  oracle from real woven/plain evidence produced by the matching OTel provider,
+  exact target, and current aspect compiler.
+
 - Shape and validate jolt-chdb's redacted forced-live takeover warning without
   retaining raw advice arguments or changing proceed/CAS outcomes; causally
   complete traces reject suppression, duplication, and malformed warnings. The
