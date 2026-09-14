@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add a hermetic woven TLS compatibility scenario for stale pooled
+  connections. It proves an idempotent GET may retry on a fresh connection,
+  while a POST that the server fully received is surfaced as ambiguous and is
+  never replayed. A forced replay-policy mutant must produce a third POST on
+  the wire and fail the exactly-once oracle.
+
 - Requalify the provider-neutral HTTP-client pack against the merged
   `casselc/http-client` v0.0.10 convergence line and its library-owned
   compatibility identity. The scenario still selects exactly one request

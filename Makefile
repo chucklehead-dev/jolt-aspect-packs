@@ -255,6 +255,9 @@ http-client-aspect-smoke:
 	@cd scenarios/http-client && \
 	  "$(JOLT_ASPECT_JOLT)" build -m jolt.aspect-packs.scenario.http-client \
 	    -o target/http-client-aspect-scenario
+	@scenarios/http-client/target/http-client-aspect-scenario \
+	  scenarios/http-client/test-resources/cert.pem \
+	  scenarios/http-client/test-resources/key.pem
 	$(call assert-effect-report,scenarios/http-client/target/http-client-aspect-scenario.build/effects.edn,woven,scenarios/http-client/target/aspects.edn)
 	@"$(JOLT_ASPECT_JOLT)" -Srepro \
 	  -Sdeps '{:paths ["test"]}' \
