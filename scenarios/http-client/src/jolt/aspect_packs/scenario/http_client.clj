@@ -13,6 +13,7 @@
 (ffi/defcfn c-setsockopt "setsockopt" [:int :int :int :pointer :int] :int)
 (ffi/defcfn c-accept "accept" [:int :pointer :pointer] :int :blocking)
 (ffi/defcfn c-getsockname "getsockname" [:int :pointer :pointer] :int)
+(ffi/defcfn c-poll "poll" [:pointer :int :int] :int :blocking)
 
 (def ^:private af-inet 2)
 (def ^:private sock-stream 1)
@@ -20,6 +21,8 @@
   (str/includes? (str/lower-case (or (System/getProperty "os.name") "")) "mac"))
 (def ^:private sol-socket (if macos? 0xffff 1))
 (def ^:private so-reuseaddr (if macos? 4 2))
+(def ^:private pollin 1)
+(def ^:private accept-timeout-ms 3500)
 
 (defn- loopback-sockaddr
   [port]
@@ -76,10 +79,29 @@
 
 (defn- accept-raw!
   [fd]
-  (let [raw (c-accept fd ffi/null ffi/null)]
-    (when (neg? raw)
-      (throw (ex-info "accept() failed" {})))
-    raw))
+  ;; Bound the regression path before accept rather than relying on close(fd)
+  ;; from another thread to wake a blocked accept portably.
+  (let [pollfd (ffi/alloc 8)]
+    (try
+      (dotimes [i 8]
+        (ffi/write pollfd :uint8 0 i))
+      (ffi/write pollfd :int fd 0)
+      (ffi/write pollfd :uint16 pollin 4)
+      (let [ready (c-poll pollfd 1 accept-timeout-ms)]
+        (cond
+          (zero? ready)
+          (throw (ex-info "server accept deadline elapsed" {}))
+
+          (neg? ready)
+          (throw (ex-info "poll() before accept failed" {}))
+
+          :else
+          (let [raw (c-accept fd ffi/null ffi/null)]
+            (when (neg? raw)
+              (throw (ex-info "accept() failed" {})))
+            raw)))
+      (finally
+        (ffi/free pollfd)))))
 
 (defn- content-length
   [head]
@@ -156,7 +178,7 @@
 
 (defn- unexpected-tls-eof?
   [error]
-  (and (= javax.net.ssl.SSLException (class error))
+  (and (instance? javax.net.ssl.SSLException error)
        (= tls/unexpected-transport-eof-message (ex-message error))))
 
 (defn- run-stale-case!
