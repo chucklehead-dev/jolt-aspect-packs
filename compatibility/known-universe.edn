@@ -10,7 +10,7 @@
 
    :pack {:id io.github.chucklehead-dev/jolt-otel-instrumentation-http-client
           :git/url "https://github.com/chucklehead-dev/jolt-otel-instrumentation-http-client.git"
-          :git/sha "30f5c94859321f3b3938437619a688766d0295d0"
+          :git/sha "0d488e9e2c03f228e146002995635ddb23364b4a"
           :provider otel.instrumentation.http-client/aspect-provider
           :manifest "META-INF/jolt/aspects/http-client-core.edn"}
    :target {:id jolt-lang/http-client

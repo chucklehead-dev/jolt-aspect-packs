@@ -9,7 +9,7 @@
   {:universe (compatibility/read-edn universe-path)
    :report (compatibility/read-edn report-path)
    :observation
-   {:pack-sha "30f5c94859321f3b3938437619a688766d0295d0"
+   {:pack-sha "0d488e9e2c03f228e146002995635ddb23364b4a"
     :target-sha "eab6b78d5957f88690faf6768360572a3f185341"
     :upstream-sha "b98833b8338b66d435cdbffa480ba2b59c005a2e"
     :compiler-sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
