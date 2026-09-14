@@ -68,6 +68,14 @@
     (is (= :incompatible (:status result)))
     (is (some #(= :report/site-id (:code %)) (:problems result)))))
 
+(deftest stale-build-identity-cannot-pass
+  (let [{:keys [universe report observation fixtures]} (fixture)
+        report (assoc report :identity "stale-build")
+        result (compatibility/check universe :otel/http-client observation
+                                    report fixtures)]
+    (is (= :incompatible (:status result)))
+    (is (some #(= :report/build-identity (:code %)) (:problems result)))))
+
 (deftest malformed-source-compatibility-id-is-rejected
   (let [{:keys [universe report observation fixtures]} (fixture)
         universe (assoc-in universe [:entries 0 :seam :id]

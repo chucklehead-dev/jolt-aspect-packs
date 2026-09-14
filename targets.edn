@@ -84,7 +84,7 @@
      :provider jolt.aspect-packs.mycelium.provider/aspect-provider}]}
 
   jolt-lang/http-client
- {:git/url "https://github.com/casselc/http-client.git"
+  {:git/url "https://github.com/casselc/http-client.git"
    :git/sha "eab6b78d5957f88690faf6768360572a3f185341"
    :compiler {:id jolt-lang/jolt
               :git/sha "2d39e854a90926d8f8e9bd5d3ddbb109d657afe1"
