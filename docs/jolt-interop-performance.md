@@ -1,152 +1,188 @@
-# Jolt interop performance and string indexing
+# Jolt counted loops and string-index portability
 
-Findings against upstream Jolt (`jolt-lang/jolt`) and `clojure.data.json`
-(`yogthos/data.json`), recorded here because neither is owned by this
-organisation. Witnesses live in `regressions/jolt/pending/`; they print the
-matrix signatures already, so each can be promoted into
-`regressions/jolt/cases.edn` as soon as there is a fixed commit to pin.
+These are characterization notes for upstream Jolt and the owned
+`casselc/data.json` fork. They do not assign a whole benchmark row to one
+language construct, claim that Jolt should adopt JVM UTF-16 indexing, or report
+an active astral-data defect in the owned stack.
 
-Everything below was measured on Jolt 0.8.6 against an 83,367-character
-JSONEachRow payload — the shape a telemetry exporter hands a database driver —
-and reproduced with `regressions/jolt/pending/interop_microbench.clj`.
+The runnable witnesses live in `regressions/jolt/pending/`.
 
-## Measurements
+## Exact evidence boundary
 
-| Operation | ms per pass | chars/s |
+Fresh evidence was collected on Linux x86_64 with Chez Scheme 10.4.1 and the
+existing optimized Jolt binary built from `casselc/jolt:integration/aspects` at
+`2d39e854a90926d8f8e9bd5d3ddbb109d657afe1` (binary SHA-256
+`6e1918a72e7547546ad8cb91eb5225f0520c985d9769201e0570ab805656ee53`).
+The JSON witness pins `casselc/data.json` merge
+`95b1e6430b48ce4fb4e649656b79f7cabc4702a7`.
+
+The original 2026-09 measurements on Jolt 0.8.6 remain useful discovery
+evidence, but their “bare loop, no body” label was wrong. That row included a
+global Var read of the limit, numeric equality, unchecked increment, and the
+recur backedge. Its 64 ns/iteration result cannot be attributed to
+`loop`/`recur` alone.
+
+## Controlled counted-loop characterization
+
+`interop_microbench.clj` separates the relevant operations while retaining the
+same 83,367-codepoint payload and a checked result. Each reported value is the
+median of five samples after warmup; each sample contains 20 complete passes.
+Timings are local characterization, not portable thresholds.
+
+| Counted-loop control | Jolt run ms/pass | Optimized AOT ms/pass |
 | --- | ---: | ---: |
-| bare loop, no body | 5.22 | 16.0 M |
-| loop + `.charAt` | 6.27 | 13.3 M |
-| `.indexOf` char, absent | 0.185 | 451 M |
-| `.indexOf` string, absent | 0.355 | 235 M |
-| `.replace`, absent needle | 0.356 | 234 M |
-| `.replace`, 15,360 hits | 0.922 | 90.5 M |
-| `.getBytes` UTF-8 | 0.243 | 343 M |
-| `.toCharArray` | 0.776 | 107 M |
-| `re-find`, 3-range char class | 3.08 | 27.1 M |
-| `data.json/write-str`, one large string | 57.4 | 1.5 M |
+| global bound, `==`, `unchecked-inc` | 10.387 | 7.863 |
+| lexical bound, `==`, `unchecked-inc` | 6.434 | 7.370 |
+| function-argument bound, `==`, `unchecked-inc` | 6.058 | 7.090 |
+| function-argument bound, `=`, `unchecked-inc` | 0.349 | 0.306 |
+| proven `^long` bound, `==`, `unchecked-inc` | 0.456 | 0.369 |
+| proven `^long` bound, `==`, `inc` | 0.303 | 0.282 |
 
-## Finding 1 — loop overhead dominates every character-level algorithm
+The corrected conclusion is narrower and more useful: the slow discovery row
+is dominated by how an unproven global bound and `==` lower, not by an empty
+recur backedge. On this compiler, choosing direct `=` for Clojure equality or
+providing valid long proof changes the result by more than an order of
+than an order of magnitude. The two proven increment rows also differ because `unchecked-inc`
+must preserve signed-64-bit wrapping, while `inc` on a proven primitive loop
+slot can use the compiler's specialized long path.
 
-A `loop`/`recur` with an empty body and `unchecked-inc` costs **64 ns per
-iteration**. Adding a `.charAt` costs 13 ns more, so the loop is five times the
-price of the interop call inside it. Chez Scheme compiles the equivalent
-`let`-loop over a fixnum to a handful of instructions, so this is not an
-inherent cost of the target.
+The witness prints all five raw sample times after each median. The final AOT
+global-`==` samples were `[7.941 7.952 7.863 7.509 7.175]` ms and its direct
+argument-`=` samples were `[0.297 0.339 0.418 0.299 0.306]` ms. The proven
+`inc` samples were `[0.335 0.267 0.285 0.282 0.272]` ms. An earlier run-mode
+invocation put the global median at 6.869 ms rather than 10.387 ms, while the
+direct/proven medians stayed in the same sub-millisecond class. Absolute
+run-mode timing was therefore noisy on this WSL2 host; the attribution and
+order-of-magnitude conclusion were stable in both modes.
 
-The consequence is architectural rather than incremental: on Jolt a native scan
-is 29× cheaper *per character* than an empty loop is *per iteration*, so any
-routine that inspects characters one at a time loses to a chain of native
-`String` calls, even when the chain makes several passes over the data and
-allocates a new string each time. Every string routine has to be written
-inside-out compared to how it would be written on the JVM.
+No row is an empty loop. Every row performs a comparison, increment, and
+backedge; the first row additionally reads a global Var inside the loop.
 
-Worth checking whether `loop`/`recur` is emitting a closure call per iteration
-rather than a jump, and whether the loop variables are being boxed despite
-`unchecked-*` arithmetic.
+### Emitted Scheme
 
-## Finding 2 — `.indexOf` and `.replace` leave 2.7-9.3x on the table — FIXED
+`emit_loop_controls.ss` drives the current Jolt analyzer, numeric pass, and
+Scheme emitter and fails if these lowering facts change:
 
-`.indexOf` is the only primitive that can prove a character *absent*, and
-proving absence is what gates every fast path, so its cost sets the ceiling for
-escapers and validators.
+| Source control | Relevant emitted form |
+| --- | --- |
+| every `loop`/`recur` control | Scheme named `let loop...`, not a Clojure closure call |
+| global bound + `==` | global lookup plus `jolt-invoke2` through the `==` Var |
+| lexical/argument bound + unproven `==` | `jolt-invoke2` through the `==` Var |
+| unproven argument bound + `=` | direct `jolt=2` |
+| proven long bound + `==` | direct `jolt-l=` |
+| proven long + `unchecked-inc` | `jolt-uncinc` |
+| proven long + `inc` | `jolt-l-inc` |
 
-**A fix is measured and proposed in casselc/jolt#70.** Three changes to
-`host/chez/java/natives-str.ss`, both binaries built from the same commit so
-the deltas are attributable:
+A direct substitution of Chez `fx+` would be incorrect: Clojure's
+`unchecked-inc` contract wraps in the signed 64-bit window, while Chez fixnums
+are narrower. Any compiler improvement has to preserve that boundary.
 
-| operation | before | after | |
+### Run mode versus optimized AOT
+
+The same namespace is the comparison unit:
+
+```sh
+jolt -A:jolt-interop-witness -M -m jolt.pending.interop-microbench run
+jolt -A:jolt-interop-witness build --direct-link --opt \
+  -m jolt.pending.interop-microbench -o /tmp/jolt-interop-microbench
+/tmp/jolt-interop-microbench optimized-aot
+```
+
+The final AOT binary SHA-256 was
+`858ae39bb316ef4a06246e9ed29d26406ea5c3b08a3aacf5be1a53aca17d463b`.
+It used the same five-sample/20-pass design as run mode and checked the returned
+value after every sample.
+
+### Existing upstream benchmark
+
+Current Jolt already has `bench/loop_recur.clj`. It is an optimized-AOT/JVM
+scorecard row and should stay in the evidence set, but it measures much more
+than a backedge: nested loops, `mod`, `quot`, multiplication, addition,
+`bit-xor`, and a data-dependent Collatz branch. Its checked-in 2026-09-09
+scorecard reports 28.5 ms on Jolt versus 18.8 ms on the JVM (1.5x) at Jolt
+commit `871ef34c`; that historical result is not a fresh measurement for
+`2d39e854`.
+
+The current row was also run twice through its own harness at `2d39e854`:
+
+| Invocation | Optimized Jolt | JVM | Ratio |
 | --- | ---: | ---: | ---: |
-| `.indexOf` char, absent | 219 M chars/s | 596 M | 2.7x |
-| `.indexOf` string, absent | 80 M chars/s | 595 M | 7.5x |
-| `.replace`, absent needle | 62 M chars/s | 578 M | 9.3x |
-| `.replace`, 15,360 matches | 59 M chars/s | 142 M | 2.4x |
+| 1 | 53.1 ms | 38.5 ms | 1.4x |
+| 2 | 53.4 ms | 34.8 ms | 1.5x |
 
-- `str-char-index` ran with `optimize-level 2` bounds and type checks on
-  `string-ref` inside the loop, though the loop invariant already proves the
-  index in range. Unsafe primitives in the body only.
-- `str-index-of` sent every needle through the substring matcher, a procedure
-  call at each non-matching position. A one-character needle — every
-  `(.replace s "\"" ...)` — needs no matcher at all.
-- `str-replace-literal` tested every position and wrote its result **one
-  character at a time** to an output string port. Jumping to each match and
-  copying the span before it in one `put-string` is where the absent-needle
-  9.3x comes from: `.replace` used as a conditional escape no longer walks and
-  rebuilds the whole string to discover it has nothing to do.
+That program warms up twice at one quarter size, then reports the mean of three
+full `n=20000` samples and verifies checksum `985294547`. A separate raw capture
+showed Jolt samples `[64.2 55.4 70.6]` (mean 63.4 ms) and
+`[67.1 63.8 74.5]` (mean 68.5 ms), while JVM samples were
+`[40.1 37.6 31.9]` (mean 36.5 ms). Those raw absolute times were visibly
+contention-sensitive, but the two official harness ratios support the same
+coarse 1.4-1.5x conclusion. They do not support a fine-grained regression claim
+or isolate the recur backedge. The separately retained optimized benchmark
+binary had SHA-256
+`808f1e9574364e1788c4119d9e31541a92e1f8d2bb8b2b2f07c7ba0b4393f2d7`.
 
-A real `memchr` binding was considered and rejected: Chez strings are UTF-32,
-so it cannot be applied without a representation change or unsupported access
-to moving GC memory. The unsafe-primitive loop reaches 603 M chars/s in raw
-Chez against 231 M for the checked one, which is most of the available gap
-without leaving supported ground.
+Reproduce the current benchmark with:
 
-Verified byte-identical to the v0.8.6 release over a deterministic 4,000-case
-corpus and 25 edge cases; gates `corpus`, `unit` and `cts` pass.
+```sh
+cd /path/to/casselc-jolt
+bench/run.sh loop-recur 20000
+```
 
-End to end on a Durable chDB WAL writer, v0.8.6 with and without the patch,
-interleaved on one host: 13,484 -> 17,003 rows/s.
+## String primitive context
 
-## Finding 3 — `re-find` over a character class is barely faster than a loop
+The old document described `casselc/jolt#70` as a fixed and fully verified
+2.7-9.3x improvement. That PR was closed without merge because it was based on
+a stale 63-commit graph, its hosted tests stopped at the portability check, its
+claimed corpus and benchmark were not committed, and unsafe extreme-index
+boundaries were not proved.
 
-A three-range character class scans at 27.1 M chars/s — 1.7× a bare `loop`, and
-17× slower than `.indexOf` on a single character. A character class over ASCII
-is a table lookup per byte and should run within a small factor of `memchr`.
+`casselc/jolt#77` later merged a narrower portable change: one-character
+`String.indexOf` needles now use the checked character scanner with normalized
+and clamped start indexes. It does not optimize multi-character search or
+literal replacement, close the counted-loop investigation, or claim a direct
+`data.json` speedup. The current witness retains separate char, string, replace,
+regex, and character-at-a-time rows so those operations cannot be conflated.
 
-This is the one primitive that can answer "does this string contain any
-character from this set" in a single pass, so its cost sets the floor for
-validators, escapers and lexers. In the case that prompted this write-up it is
-now **the** bottleneck: with casselc/jolt#70 applied, the WAL escaper's
-`.replace` chain drops from 5.6 ms to 2.0 ms and the unchanged character-class
-search becomes 5.5 ms of a 7.9 ms stage.
+The original `re-find` observation is still a profiling lead, not a proved
+compiler defect. A three-range character class includes regex translation and
+engine behavior; comparing it with one-character `indexOf` does not isolate a
+single equivalent operation.
 
-Note what that implies. Once `.indexOf` is 2.7x faster, proving the 27 exotic
-control characters absent one needle at a time costs 3.8 ms — **less** than the
-single character-class search that replaced it. A primitive meant to do this
-job in one pass is slower than 27 separate passes.
+## data.json status
 
-## Finding 4 — `data.json/write-str` is 60× slower than a native replace chain
+The earlier 1.5 M chars/s row identified a real post-escape per-character path,
+but it is not an open owned-stack finding. `casselc/data.json#2` merged as
+`95b1e6430b48ce4fb4e649656b79f7cabc4702a7`; the writer now bulk-appends each
+unescaped span after an escape and retains causal range-call and exact-output
+tests. Aspect-packs issue #120 is therefore closed.
 
-Encoding one large string as a JSON string value runs at **1.5 M chars/s**:
-57 ms for 83 KB. That is 10× slower than a bare Jolt loop over the same
-characters, so the writer is doing on the order of ten operations per
-character, and 60× slower than the `.replace` chain that replaced it.
+The microbenchmark still characterizes a complete map/string write on the
+current pin. It must not be interpreted as the cost of one internal operation,
+as a universal serializer throughput claim, or as proof of a Durable row-rate.
 
-The writer appears to dispatch per character rather than bulk-copying the runs
-between escapes. Since escapes are rare in real payloads, appending each
-unescaped run in one operation should recover most of the gap without changing
-any output.
+## Codepoint indexing is a portability hazard
 
-Measured in context: a Durable WAL writer that recorded each statement with
-`(json/write-str {"sql" sql})` spent 101 ms per 512-row batch there, two thirds
-of the entire write path. Replacing it with `.indexOf`-gated `.replace` passes
-producing byte-identical output for ASCII took that stage to under 6 ms.
-
-## Finding 5 — `String` is indexed by codepoint, not UTF-16 code unit
-
-`.length`, `.charAt`, `.indexOf` and `.substring` all operate on Unicode
-codepoints. The JVM operates on UTF-16 code units. For `"a" + U+1D11E + "b"`:
+Jolt intentionally indexes `String` by Unicode scalar value; the JVM indexes
+by UTF-16 code unit. For `"a" + U+1D11E + "b"`:
 
 | | Jolt | JVM |
 | --- | --- | --- |
 | `.length` | 3 | 4 |
 | `.charAt` sequence | `U+0061 U+1D11E U+0062` | `U+0061 U+D834 U+DD1E U+0062` |
-| `.indexOf \b` | 2 | 3 |
+| `.indexOf` `b` | 2 | 3 |
 
-Self-consistent, and arguably the better design — but it is a silent
-portability divergence, and it has a specific failure mode worth calling out.
-Any writer that escapes a character as `(format "\\u%04x" (int (.charAt s i)))`
-— the ordinary way to emit a JSON or SQL unicode escape — produces a **five**
-hex digit escape on Jolt for any character above the BMP. A conformant reader
-consumes four digits and leaves the fifth as a literal, so `U+1D11E` round-trips
-as `U+1D11` followed by `e`. No exception, no truncation, just different text.
+A bespoke encoder that formats each indexed element with
+`(format "\\u%04x" ...)` is host-dependent. On Jolt, U+1D11E becomes the
+five-digit text `\\u1d11e`; a JSON reader consumes four hex digits and leaves
+the final `e`, so it does not round-trip. On the JVM, the same loop visits two
+surrogates and happens to produce the required pair.
 
-This was found in a Durable WAL writer during the work above, where it would
-have silently corrupted any statement carrying an astral character. Portable
-code must split the codepoint into a surrogate pair by hand, which is exactly
-the code a JVM-shaped mental model would never write.
+That is a warning for new cross-host encoders, not evidence that active
+`casselc/data.json` corrupts astral text. Its scalar-index foundation merged in
+PR #1 and its current writer emits `"\\ud834\\udd1e"` and round-trips on both
+models. `string_indexing_portability.clj` asserts the representation-specific
+naive result and the owned writer's representation-independent result on Jolt
+and the JVM.
 
-The witness is `regressions/jolt/pending/string_codepoint_indexing.clj`. It
-asserts the JVM contract, so it fails on Jolt today; the failure message shows
-the malformed escape.
-
-Whether the fix is to match the JVM or to document the divergence loudly, the
-`\uXXXX` hazard deserves a note wherever host interop is described.
+Keep explicit astral round-trip and exact-byte properties anywhere a project
+introduces a bespoke JSON, SQL, or WAL encoder.
