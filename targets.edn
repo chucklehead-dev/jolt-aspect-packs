@@ -47,11 +47,16 @@
   io.github.chucklehead-dev/jolt-chdb-durable
   {:library {:id io.github.chucklehead-dev/jolt-chdb
              :git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
-             :git/sha "e7e8bbf0ce17f7d3a3a0878c7305fbbf7c7c8867"}
+             :git/sha "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee"}
+   :provider {:id jolt-lang/db
+              :git/url "https://github.com/casselc/db.git"
+              :git/sha "6db791634e5a4c65c24646833b2e82d3a5d7a121"}
+   :runtime {:version "0.8.6"
+             :release-git/sha "f3041a0e32ba0db1b92bd69b8ecb7b40f8b2e115"}
     :compiler {:id jolt-lang/jolt
-              :git/url "https://github.com/jolt-lang/jolt.git"
-              :git/sha "5d56b9e5d295fe0968df07e535c45353050611f7"
-              :branch "integration/aspects-v0.8.3"
+              :git/url "https://github.com/casselc/jolt.git"
+              :git/sha "120643d6bc322800a700e870de5c8087ad6085fa"
+              :branch "integration/aspects"
               :chez "10.4.1"}
    :boundary :durable-control-entry-seams
    :manifest "META-INF/jolt/aspects/packs/chdb-durable-4a0b821.edn"

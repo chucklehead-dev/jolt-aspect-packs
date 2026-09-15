@@ -14,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      JOLT_CACHE_DIR: ${{ github.workspace }}/.jolt-cache-v0.8.3
-      JOLT_GITLIBS_DIR: ${{ github.workspace }}/.jolt-gitlibs-v0.8.3
+      JOLT_CACHE_DIR: ${{ github.workspace }}/.jolt-cache-v0.8.6-aspects-120643d6
+      JOLT_GITLIBS_DIR: ${{ github.workspace }}/.jolt-gitlibs-v0.8.6-aspects-120643d6
     steps:
       - uses: actions/checkout@v4
       - name: Check out the pinned aspect-capable Jolt compiler
         uses: actions/checkout@v4
         with:
-          repository: jolt-lang/jolt
-          ref: 5d56b9e5d295fe0968df07e535c45353050611f7
+          repository: casselc/jolt
+          ref: 120643d6bc322800a700e870de5c8087ad6085fa
           path: .ci/jolt
           submodules: recursive
           fetch-depth: 0
@@ -33,7 +33,7 @@ jobs:
             .ci/jolt/.cache
             ${{ env.JOLT_CACHE_DIR }}
             ${{ env.JOLT_GITLIBS_DIR }}
-          key: ${{ runner.os }}-jolt-5d56b9e5-chdb-durable-${{ hashFiles('deps.edn', 'scenarios/chdb-durable/deps.edn', 'scenarios/chdb-durable-plain/deps.edn') }}
+          key: ${{ runner.os }}-jolt-120643d6-chdb-durable-${{ hashFiles('deps.edn', 'scenarios/chdb-durable/deps.edn', 'scenarios/chdb-durable-plain/deps.edn', 'scenarios/chdb-durable-crash/deps.edn') }}
       - name: Install the compiler's UUID link dependency
         run: |
           sudo apt-get update
@@ -44,12 +44,13 @@ jobs:
           set -euo pipefail
           make -C .ci/jolt -j1 deps
           test "$(.ci/jolt/bin/jolt --version)" = \
-            "jolt v0.8.3-41-g5d56b9e5"
+            "jolt v0.8.6-97-g120643d6"
       - name: Durable provider and offline model
         run: .ci/jolt/bin/jolt -Srepro -M:chdb-durable-test
-      - name: Woven warning model and plain erasure
+      - name: Woven warning model, crash recovery, and plain erasure
         shell: bash
         run: |
           set -euo pipefail
           make -j1 JOLT_ASPECT_JOLT="$GITHUB_WORKSPACE/.ci/jolt/bin/jolt" \
-            chdb-durable-aspect-smoke chdb-durable-plain-smoke
+            chdb-durable-aspect-smoke chdb-durable-crash-smoke \
+            chdb-durable-plain-smoke

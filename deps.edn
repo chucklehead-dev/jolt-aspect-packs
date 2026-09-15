@@ -47,7 +47,10 @@
    :extra-deps
    {io.github.chucklehead-dev/jolt-chdb
     {:git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
-     :git/sha "e7e8bbf0ce17f7d3a3a0878c7305fbbf7c7c8867"}
+     :git/sha "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee"}
+    jolt-lang/db
+    {:git/url "https://github.com/casselc/db.git"
+     :git/sha "6db791634e5a4c65c24646833b2e82d3a5d7a121"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
      :git/sha "3bc46499e0cfb5cf8fe67c30e997fbcae135ab47"}}
@@ -55,9 +58,12 @@
   :test
   {:extra-paths ["test" "models"]
    :extra-deps
-   {io.github.casselc/db
+   {jolt-lang/db
     {:git/url "https://github.com/casselc/db.git"
-     :git/sha "0c559d78d839f2f9c8cc1a7326a639134134bfac"}
+     :git/sha "6db791634e5a4c65c24646833b2e82d3a5d7a121"}
+    io.github.chucklehead-dev/jolt-chdb
+    {:git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
+     :git/sha "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee"}
     io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
      :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}

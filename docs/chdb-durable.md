@@ -96,14 +96,31 @@ recorded in `targets.edn`:
 ```sh
 /home/chuck/ai-src/tools/jolt-with-chez-10.4.1 \
   make JOLT_ASPECT_JOLT=/absolute/path/to/jolt \
-  chdb-durable-aspect-smoke chdb-durable-plain-smoke
+  chdb-durable-aspect-smoke chdb-durable-crash-smoke \
+  chdb-durable-plain-smoke
 ```
+
+The current qualification set is exact and indivisible:
+
+- released Jolt `0.8.6` at
+  `f3041a0e32ba0db1b92bd69b8ecb7b40f8b2e115`;
+- aspect compiler `120643d6bc322800a700e870de5c8087ad6085fa`;
+- jolt-chdb merge `3552a2575a96e3c9dd7b495a9b16b1e9c3317eee`; and
+- its canonical `jolt-lang/db` provider
+  `6db791634e5a4c65c24646833b2e82d3a5d7a121`.
+
+The explicit provider override in every scenario is intentional: dependency
+resolution must not silently select an older transitive DB implementation.
+The jolt-chdb merge still has the documented one-live-path process restriction.
+Its open [jolt-chdb issue #103](https://github.com/chucklehead-dev/jolt-chdb/issues/103)
+owns the final-close lifecycle decision; this qualification does not include or
+claim unpublished work from that issue.
 
 The woven lane executes the real in-memory Durable implementation through
 an ordinary acquire, a forced-live acquire and warning, WAL publish/commit,
 renew, checkpoint publish/commit, and release. The
 compiler report must resolve the option-bearing arities and closed warning
-result at jolt-chdb `e7e8bbf0ce17f7d3a3a0878c7305fbbf7c7c8867`,
+result at jolt-chdb `3552a2575a96e3c9dd7b495a9b16b1e9c3317eee`,
 with one selected site per logical
 operation. The scenario then validates the captured history offline. Warning
 observation is bounded evidence for this causally complete scenario, not a
@@ -112,12 +129,13 @@ lane executes the same source and proves that no journal events or compiler
 aspect effects exist.
 
 `.github/workflows/chdb-durable.yml` runs the focused provider/model tests and
-then serializes `chdb-durable-aspect-smoke` and
+then serializes `chdb-durable-aspect-smoke`, `chdb-durable-crash-smoke`, and
 `chdb-durable-plain-smoke` in one bounded job. It checks out the exact compiler
 SHA from `targets.edn`, provisions its pinned toolchain, resolves the immutable
 target SHA, and caches only compiler/dependency state. Generated scenarios are
 rebuilt so CI requires the woven warning/privacy model and compiler-effect
-report, then separately proves plain-build erasure.
+report, exercises all deterministic before/after crash cuts, then separately
+proves plain-build erasure.
 
 For application integration, keep the gates layered:
 
@@ -126,8 +144,11 @@ For application integration, keep the gates layered:
    Hegel stateful properties.
 3. This pack validates real woven command histories plus compiler provenance
    and retains a plain-build erasure lane.
-4. oscope runs the native chDB Durable lifecycle and can bind a journal around
-   that test to validate the application-observed history with this model.
+4. oscope pins this aspect-pack revision together with the four exact stack
+   coordinates above, runs the native chDB Durable lifecycle, and can bind a
+   journal around that test to validate the application-observed history with
+   this model. Oscope must retain the one-live-path restriction until
+   jolt-chdb issue #103 lands and this matrix is requalified.
 
 This keeps model checking, generated model-based testing, implementation
 properties, and observed-trace validation distinct while sharing one command
