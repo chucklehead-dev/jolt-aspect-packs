@@ -5,6 +5,7 @@
             [hegel.generator :as g]
             [jolt.aspects :as aspects]
             [jolt.fibers :as fibers]
+            [jolt.scheme :as scheme]
             [jolt.aspect-packs.core-async.faults :as faults]
             [jolt.aspect-packs.core-async.model :as model]
             [jolt.aspect-packs.core-async.provider :as provider]
@@ -80,6 +81,117 @@
 
 (defn- run-worker! [backend f]
   (join-worker! backend (start-worker backend f)))
+
+(defn- pending-alt-count [accessor channel]
+  (scheme/call "length" (scheme/call accessor channel)))
+
+(defn- await-pending-alt-count! [accessor channel expected origin]
+  (loop [remaining 200]
+    (let [actual (pending-alt-count accessor channel)]
+      (cond
+        (= expected actual) actual
+        (zero? remaining)
+        (throw (ex-info "core.async alts registration did not become visible"
+                        {:hegel/origin origin
+                         :accessor accessor
+                         :expected expected
+                         :actual actual}))
+        :else
+        (do
+          (Thread/sleep 5)
+          (recur (dec remaining)))))))
+
+(defn- alts-close-ledger-valid?
+  [{:keys [registered-before-close registered-after-close drained
+           result-value result-port? after]} expected-drained]
+  (and (= 1 registered-before-close)
+       (= 1 registered-after-close)
+       (= expected-drained drained)
+       (true? result-value)
+       result-port?
+       (nil? after)))
+
+(defn- run-alts-close-case! [backend capacity]
+  (let [channel (async/chan capacity)
+        pending [:alts-pending capacity]
+        buffered [:buffered capacity]]
+    (try
+      (when (= 1 capacity)
+        (when-not (true? (async/>!! channel buffered))
+          (throw (ex-info "core.async alts prefill was not accepted"
+                          {:capacity capacity}))))
+      (let [worker (start-worker
+                    backend
+                    #(async/alts!! [[channel pending]] :priority true))
+            registered-before-close
+            (await-pending-alt-count!
+             "async-chan-alt-putters" channel 1
+             "core-async/alts-registered-before-close")]
+        (async/close! channel)
+        ;; This exact target-owned queue observation is the causal boundary:
+        ;; the alts operation registered before close and close did not discard
+        ;; or complete it. The public drains below then prove its value and
+        ;; result remain owned together.
+        (let [registered-after-close
+              (pending-alt-count "async-chan-alt-putters" channel)
+              first-value (async/<!! channel)
+              drained (if (= 1 capacity) (async/<!! channel) first-value)
+              [result-value result-port] (join-worker! backend worker)
+              after (async/<!! channel)]
+          {:registered-before-close registered-before-close
+           :registered-after-close registered-after-close
+           :first first-value
+           :drained drained
+           :result-value result-value
+           :result-port? (identical? channel result-port)
+           :after after
+           :expected-first (if (= 1 capacity) buffered pending)
+           :expected-drained pending}))
+      (finally
+        (async/close! channel)))))
+
+(deftest registered-alts-puts-survive-close-and-drain-exactly-once
+  (doseq [backend [:thread :fiber]
+          capacity [0 1]]
+    (testing [backend capacity]
+      (let [{:keys [first expected-first expected-drained] :as ledger}
+            (run-alts-close-case! backend capacity)]
+        (is (= expected-first first))
+        (is (alts-close-ledger-valid? ledger expected-drained))))))
+
+(deftest one-alts-handler-cannot-rendezvous-with-itself
+  (doseq [backend [:thread :fiber]]
+    (testing backend
+      (let [channel (async/chan)
+            timeout-channel (async/timeout 25)]
+        (try
+          (let [[value port]
+                (run-worker!
+                 backend
+                 #(async/alts!! [[channel :self] channel timeout-channel]
+                                :priority true))]
+            (is (nil? value))
+            (is (identical? timeout-channel port))
+            (is (nil? (async/poll! channel)))
+            (is (= 0 (pending-alt-count "async-chan-alt-putters" channel)))
+            (is (= 0 (pending-alt-count "async-chan-alt-takers" channel))))
+          (finally
+            (async/close! channel)))))))
+
+(deftest synthetic-alts-ledger-controls-detect-dropped-ownership
+  (let [valid {:registered-before-close 1
+               :registered-after-close 1
+               :drained :pending
+               :result-value true
+               :result-port? true
+               :after nil}]
+    (is (alts-close-ledger-valid? valid :pending))
+    (doseq [broken [(assoc valid :registered-after-close 0)
+                    (assoc valid :drained nil)
+                    (assoc valid :result-value false)
+                    (assoc valid :result-port? false)
+                    (assoc valid :after :duplicate)]]
+      (is (not (alts-close-ledger-valid? broken :pending))))))
 
 (defn- registration-ledger-valid?
   [{:keys [operation pending-before-close pending-after-close callback-results

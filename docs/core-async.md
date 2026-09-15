@@ -69,12 +69,23 @@ fiber registration race that previously let close overtake an operation after
 its public call had returned. The generated two-actor histories keep both
 cases under the same bounded oracle.
 
+The current pack is source-matched and qualified against
+`casselc/jolt@aa0e71f798429fb60dabb766e3f7a31d07bd1cd8`, the immutable
+`integration/aspects` merge of PR #79. That revision extends the same ownership
+rule to blocking, callback, fiber, and `alts!` paths. The target-qualified tests
+observe the internal pending-alts registration only to establish the causal
+pre-close boundary, then use public close and take operations to prove that
+capacity-zero and capacity-one values drain exactly once. A mixed `alts!`
+containing both `[channel value]` and the same take channel must instead select
+a distinct port; its shared handler cannot rendezvous with itself.
+
 This is not yet a claim about every core.async operation. In particular:
 
 - the `go` CPS pass can lower visible `<!` and `>!` calls to internal state
   machine operations before aspect weaving;
-- `alts!` fairness and multi-channel winner selection require separate
-  statistical and multi-object models.
+- general `alts!` fairness and multi-channel winner selection still require
+  separate statistical and multi-object models; the current target-qualified
+  slice covers only pending-put close ownership and shared-handler self-pairing.
 
 Those are follow-on experiments. A failing public history is fixed at the
 runtime ownership layer first; only a recurring claim/publish/wake pattern is a
@@ -149,3 +160,9 @@ oracles reject each forbidden outcome; they are not injected runtime mutants.
 The transformed property excludes capacity zero because Jolt steps and enqueues
 that put during registration, so the pending transformed-input schedule is not
 reachable there.
+
+That transformed-close ordering is the pinned Jolt contract. Jolt deliberately
+defers reducer completion until the already-owned pending inputs drain. It is
+not inferred from the callback history model, which intentionally models only
+channel ownership and FIFO values; the separate reducer ledger and mutation
+controls make the completion-order claim non-vacuous.

@@ -4,7 +4,7 @@
 
 (def target-revision
   "Exact Jolt revision validated by this external pack."
-  "db00fad945f9145d4a5452039da18f9957a9d0bc")
+  "aa0e71f798429fb60dabb766e3f7a31d07bd1cd8")
 
 (def ^:private operation-ids
   #{:core-async/offer :core-async/poll :core-async/close})
