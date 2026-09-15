@@ -2,11 +2,13 @@
  :targets
  {jolt-lang/jolt
   {:git/url "https://github.com/casselc/jolt.git"
-   :git/sha "db00fad945f9145d4a5452039da18f9957a9d0bc"
+   :git/sha "9534e546f898ad56cf0f1b50e05930472eddb69b"
    :compiler {:id jolt-lang/jolt
-              :git/sha "e149e7f7d8394874d958518e980f6343f8ef4185"
+              :git/url "https://github.com/casselc/jolt.git"
+              :git/sha "9534e546f898ad56cf0f1b50e05930472eddb69b"
+              :branch "integration/aspects"
               :chez "10.4.1"}
-   :manifest "META-INF/jolt/aspects/packs/core-async-db00fad.edn"
+   :manifest "META-INF/jolt/aspects/packs/core-async-9534e54.edn"
    :scenario "scenarios/core-async"
    :plain-scenario "scenarios/core-async-plain"
    :effect-evidence

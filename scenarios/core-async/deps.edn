@@ -7,6 +7,6 @@
    :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
  :jolt/build
  {:aspects
-  [{:resource "META-INF/jolt/aspects/packs/core-async-db00fad.edn"
+  [{:resource "META-INF/jolt/aspects/packs/core-async-9534e54.edn"
     :providers [jolt.aspect-packs.core-async.provider/aspect-provider]}]
   :aspect-report "target/aspects.edn"}}

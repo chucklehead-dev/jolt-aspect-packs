@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Requalify the core.async observation and fault pack against the pending-put
+  ownership repair at pre-merge `casselc/jolt@9534e546`: capacity-zero,
+  capacity-one, callback, fiber, `alts!`, and transformed close/drain witnesses
+  retain causal registration, FIFO value ownership, exactly-once completion,
+  woven effect evidence, and plain-build erasure. The immutable pin must be
+  replaced by PR #79's merge SHA before publication.
+
 - Requalify the complete chDB Durable woven, plain-erasure, and crash/fault
   matrix on Jolt 0.8.6 with aspect compiler
   `120643d6bc322800a700e870de5c8087ad6085fa`, jolt-chdb merge

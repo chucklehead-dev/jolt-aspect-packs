@@ -35,11 +35,23 @@
     :contract :replace-args-v1}})
 
 (def expected-resource
-  "META-INF/jolt/aspects/packs/core-async-db00fad.edn")
+  "META-INF/jolt/aspects/packs/core-async-9534e54.edn")
 
 (defn -main [report-path]
   (let [report (edn/read-string (slurp report-path))
-        aspects (into {} (map (juxt :id identity) (:aspects report)))]
+        aspects (into {} (map (juxt :id identity) (:aspects report)))
+        target (get-in (edn/read-string (slurp "targets.edn"))
+                       [:targets 'jolt-lang/jolt])]
+    (when-not (= {:target provider/target-revision
+                  :compiler provider/target-revision
+                  :branch "integration/aspects"
+                  :manifest expected-resource}
+                 {:target (:git/sha target)
+                  :compiler (get-in target [:compiler :git/sha])
+                  :branch (get-in target [:compiler :branch])
+                  :manifest (:manifest target)})
+      (throw (ex-info "core.async target/compiler provenance drifted"
+                      {:target target})))
     (when-not (= 1 (:schema report))
       (throw (ex-info "unexpected aspect report schema" {:report report})))
     (when-not (= "jolt.aspect-ir/v1" (:weaver report))
