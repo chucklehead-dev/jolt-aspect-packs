@@ -30,9 +30,10 @@
        (emitf "(fn* ([] (loop [i 0] (if (== i user/global-limit) i (recur (unchecked-inc i))))))")
        '("(let loop" "host-static-ref \"user\" \"global-limit\""
          "jolt-invoke2" "jolt-uncinc"))
-(check "lexical bound, ==, unchecked-inc"
-       (emitf "(fn* ([] (let [limit 83367] (loop [i 0] (if (== i limit) i (recur (unchecked-inc i)))))))")
-       '("(let loop" "jolt-invoke2" "jolt-uncinc"))
+(check "hoisted global bound, ==, unchecked-inc"
+       (emitf "(fn* ([] (let [limit user/global-limit] (loop [i 0] (if (== i limit) i (recur (unchecked-inc i)))))))")
+       '("host-static-ref \"user\" \"global-limit\"" "(let loop"
+         "jolt-invoke2" "jolt-uncinc"))
 (check "argument bound, ==, unchecked-inc"
        (emitf "(fn* ([limit] (loop [i 0] (if (== i limit) i (recur (unchecked-inc i))))))")
        '("(let loop" "jolt-invoke2" "jolt-uncinc"))
@@ -40,7 +41,7 @@
        (emitf "(fn* ([limit] (loop [i 0] (if (= i limit) i (recur (unchecked-inc i))))))")
        '("(let loop" "jolt=2" "jolt-uncinc"))
 (check "proven long bound, ==, unchecked-inc"
-       (emitf "(fn* ([^long limit] (loop [i (unchecked-long 0)] (if (== i limit) i (recur (unchecked-inc i))))))")
+       (emitf "(fn* ([^long limit] (loop [i 0] (if (== i limit) i (recur (unchecked-inc i))))))")
        '("(let loop" "jolt-l=" "jolt-uncinc"))
 (check "proven long bound, ==, inc"
        (emitf "(fn* ([^long limit] (loop [i 0] (if (== i limit) i (recur (inc i))))))")

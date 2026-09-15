@@ -26,10 +26,11 @@
   ;; U+1D11E MUSICAL SYMBOL G CLEF, built without a source literal or the JSON
   ;; reader under test. Jolt accepts the scalar directly; the JVM accepts its
   ;; UTF-16 surrogate pair.
-  (let [clef (try
-               (str (char 0x1D11E))
-               (catch IllegalArgumentException _
-                 (str (char 0xD834) (char 0xDD1E))))
+  (let [[clef scalar-construction?]
+        (try
+          [(str (char 0x1D11E)) true]
+          (catch IllegalArgumentException _
+            [(str (char 0xD834) (char 0xDD1E)) false]))
         subject (str "a" clef "b")
         length (.length subject)
         units (mapv (fn [i] (int (.charAt subject i))) (range length))
@@ -45,14 +46,18 @@
                     utf16-model? "utf-16"
                     :else "unknown")]
     (finish!
-     (and (or (and scalar-model? (= 3 length) (= 2 index-of-b))
-              (and utf16-model? (= 4 length) (= 3 index-of-b)))
+     (and ;; Construction and observed indexing must identify the same host model.
+          (= scalar-construction? scalar-model?)
+          (or (and scalar-model? (= 3 length) (= 2 index-of-b))
+              (and (not scalar-construction?)
+                   utf16-model? (= 4 length) (= 3 index-of-b)))
           ;; The naive formatter is safe only under JVM-shaped UTF-16 indexing.
           (= utf16-model? (= clef naive-roundtrip))
           ;; The owned writer must be safe under either host representation.
           (= clef safe-roundtrip)
           (= "\"\\ud834\\udd1e\"" safe-json))
      (str "model=" model
+          " scalar-construction=" scalar-construction?
           " naive=" (pr-str naive)
           " naive-roundtrip=" (= clef naive-roundtrip)
           " data.json=" (pr-str safe-json)))))

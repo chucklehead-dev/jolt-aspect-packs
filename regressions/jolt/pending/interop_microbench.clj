@@ -43,7 +43,7 @@
     (if (= i limit) i (recur (unchecked-inc i)))))
 
 (defn- proven-bound-unchecked [^long limit]
-  (loop [i (unchecked-long 0)]
+  (loop [i 0]
     (if (== i limit) i (recur (unchecked-inc i)))))
 
 (defn- proven-bound-inc [^long limit]
@@ -59,10 +59,11 @@
                       result nil]
                  (if (zero? remaining)
                    result
-                   (recur (dec remaining) (thunk))))]
+                   (recur (dec remaining) (thunk))))
+        end (System/nanoTime)]
     (when-not (= expected result)
       (throw (ex-info "benchmark result changed" {:expected expected :actual result})))
-    (/ (double (- (System/nanoTime) start)) 1e6 reps)))
+    (/ (double (- end start)) 1e6 reps)))
 
 (defn- bench [label reps thunk]
   (let [expected (thunk)]
@@ -77,7 +78,7 @@
   (println "characterization-mode:" (or (first args) "unspecified"))
   (println (format "payload: %d codepoints" global-limit))
   (bench "global bound, ==, unchecked-inc" 20 global-bound-loop)
-  (bench "lexical bound, ==, unchecked-inc" 20 lexical-bound-loop)
+  (bench "hoisted global bound, ==, unchecked-inc" 20 lexical-bound-loop)
   (bench "argument bound, ==, unchecked-inc" 20
          #(argument-bound-== global-limit))
   (bench "argument bound, =, unchecked-inc" 20
@@ -95,7 +96,7 @@
   (bench ".indexOf char, absent" 20 #(.indexOf subject (int 1)))
   (bench ".indexOf string, absent" 20 #(.indexOf subject absent))
   (bench ".replace, absent needle" 10 #(.replace subject absent "x"))
-  (bench ".replace, 15360 hits" 10 #(.replace subject "\"" "\\\""))
+  (bench ".replace, 8192 hits" 10 #(.replace subject "\"" "\\\""))
   (bench ".getBytes UTF-8" 20 #(alength (.getBytes subject "UTF-8")))
   (bench ".toCharArray" 20 #(alength (.toCharArray subject)))
   (bench "re-find, 3-range char class" 10 #(re-find control-class subject))
