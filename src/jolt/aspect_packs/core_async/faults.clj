@@ -3,7 +3,7 @@
 
 (def target-revision
   "Exact Jolt revision validated by this fault provider."
-  "9534e546f898ad56cf0f1b50e05930472eddb69b")
+  "aa0e71f798429fb60dabb766e3f7a31d07bd1cd8")
 
 (def ^:dynamic *action* nil)
 (def ^:dynamic *decisions* nil)

@@ -69,15 +69,15 @@ fiber registration race that previously let close overtake an operation after
 its public call had returned. The generated two-actor histories keep both
 cases under the same bounded oracle.
 
-The current pack is source-matched and pre-merge qualified against
-`casselc/jolt@9534e546f898ad56cf0f1b50e05930472eddb69b` from
-`integration/aspects` PR #79. That revision extends the same ownership rule to
-blocking, callback, fiber, and `alts!` paths. The target-qualified tests observe
-the internal pending-alts registration only to establish the causal pre-close
-boundary, then use public close and take operations to prove that capacity-zero
-and capacity-one values drain exactly once. A mixed `alts!` containing both
-`[channel value]` and the same take channel must instead select a distinct port;
-its shared handler cannot rendezvous with itself.
+The current pack is source-matched and qualified against
+`casselc/jolt@aa0e71f798429fb60dabb766e3f7a31d07bd1cd8`, the immutable
+`integration/aspects` merge of PR #79. That revision extends the same ownership
+rule to blocking, callback, fiber, and `alts!` paths. The target-qualified tests
+observe the internal pending-alts registration only to establish the causal
+pre-close boundary, then use public close and take operations to prove that
+capacity-zero and capacity-one values drain exactly once. A mixed `alts!`
+containing both `[channel value]` and the same take channel must instead select
+a distinct port; its shared handler cannot rendezvous with itself.
 
 This is not yet a claim about every core.async operation. In particular:
 

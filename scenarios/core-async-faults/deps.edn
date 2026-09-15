@@ -8,7 +8,7 @@
  :jolt/build
  {:allow-control-aspects true
   :aspects
-  [{:resource "META-INF/jolt/aspects/packs/core-async-9534e54.edn"
+  [{:resource "META-INF/jolt/aspects/packs/core-async-aa0e71f.edn"
     :consumers
     [{:provider jolt.aspect-packs.core-async.faults/aspect-provider
       :roles [:concurrency/channel-operation
