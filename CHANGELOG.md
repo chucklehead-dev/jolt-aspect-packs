@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Correct the pending Jolt string witnesses: decompose the previously labelled
+  empty loop into global, hoisted, function-argument, equality, and matching-init
+  proven-long controls; exclude result validation from timing; record current
+  emitted Scheme and run/AOT evidence; and reframe
+  scalar-indexed astral strings as a portability hazard that the pinned owned
+  `casselc/data.json` writer handles safely.
+
 - Shape and validate jolt-chdb's redacted forced-live takeover warning without
   retaining raw advice arguments or changing proceed/CAS outcomes; causally
   complete traces reject suppression, duplication, and malformed warnings. The

@@ -7,6 +7,12 @@
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
      :git/sha "ae95d82034fe79fd6b7c31e56bc3bb3c5dcf7660"}}
    :main-opts ["-m" "jolt.aspect-packs.event-contract-runner"]}
+  :jolt-interop-witness
+  {:extra-paths ["regressions"]
+   :extra-deps
+   {io.github.casselc/data.json
+    {:git/url "https://github.com/casselc/data.json.git"
+     :git/sha "95b1e6430b48ce4fb4e649656b79f7cabc4702a7"}}}
   :db-corpus-offline
   {:extra-paths ["corpus" "models" "corpus-test"]
    :extra-deps
