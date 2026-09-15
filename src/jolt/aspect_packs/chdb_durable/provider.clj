@@ -39,6 +39,7 @@
       (cond-> {:generation (get lease "generation")
                :writer (when (and (string? owner) (string? instance))
                          (history/opaque-token! journal [owner instance]))
+               :lease-expires-at (get lease "expires_at")
                :manifest-sequence (get manifest "seq")}
         (or (map? (get manifest "base")) (seq wal))
         (assoc :last-reference
@@ -57,6 +58,7 @@
                           :generation 0}))
        :now (:now options)
        :expires-at (:expires-at options)
+       :clock-skew (or (:clock-skew options) 0)
        :force? (true? (:force? options))})
 
     :durable/publish-wal
@@ -88,8 +90,28 @@
 
     {:command :unknown}))
 
-(defn- return-summary [journal value]
+(def ^:private forced-live-warning
+  {:event :durable/forced-live-takeover
+   :severity :warning
+   :protocol-version 1})
+
+(defn- warning-summary [warning]
+  (if (and (map? warning)
+           (= (set (keys warning))
+              #{:event :severity :protocol-version :lease-generation})
+           (= forced-live-warning
+              (select-keys warning [:event :severity :protocol-version]))
+           (integer? (:lease-generation warning))
+           (pos? (:lease-generation warning)))
+    warning
+    {:event :durable/malformed-warning}))
+
+(defn- return-summary [journal operation value]
   (cond-> {:outcome (:status value)}
+    (= :durable/acquire operation)
+    (assoc :warnings (if (vector? (:warnings value))
+                       (mapv warning-summary (:warnings value))
+                       :malformed))
     (map? (:head value)) (assoc :head (head-summary journal (:head value)))
     (map? (:reference value))
     (assoc :reference (reference-summary journal (:reference value)))))
@@ -114,7 +136,7 @@
          journal join-point
          (assoc (command-input journal (:id join-point) evaluated-args)
                 :durable-object durable-object)
-         {:return-fn #(assoc (return-summary journal %)
+         {:return-fn #(assoc (return-summary journal (:id join-point) %)
                              :durable-object durable-object)
           :throw-fn #(assoc (throw-summary %)
                             :durable-object durable-object)}
