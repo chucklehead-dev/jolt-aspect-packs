@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Requalify the complete chDB Durable woven, plain-erasure, and crash/fault
+  matrix on Jolt 0.8.6 with aspect compiler
+  `120643d6bc322800a700e870de5c8087ad6085fa`, jolt-chdb merge
+  `3552a2575a96e3c9dd7b495a9b16b1e9c3317eee`, and canonical DB provider
+  `6db791634e5a4c65c24646833b2e82d3a5d7a121`. A focused provenance test keeps
+  the root alias, all three scenario graphs, target ledger, and hosted gate on
+  that one exact stack while retaining woven/plain and crash-cut controls.
+
 - Correct the pending Jolt string witnesses: decompose the previously labelled
   empty loop into global, hoisted, function-argument, equality, and matching-init
   proven-long controls; exclude result validation from timing; record current

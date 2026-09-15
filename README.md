@@ -94,7 +94,10 @@ The chDB Durable pack observes the lease, immutable publication, head-CAS,
 renewal, and release entry seams without retaining backend or tenant data. Its
 offline Hegel model checks real woven histories using the same command
 vocabulary as the literate Quint model, while an identical plain build proves
-instrumentation erasure. See [the chDB Durable pack notes](docs/chdb-durable.md).
+instrumentation erasure. Its current-stack ledger also pins the crash/fault
+scenario to the same Jolt 0.8.6 compiler, merged jolt-chdb target, and canonical
+DB provider as the woven and plain scenarios. See
+[the chDB Durable pack notes](docs/chdb-durable.md).
 
 The Mycelium pack targets Samizdat's provider-neutral workflow and selected-edge
 semantic events at compatibility revision

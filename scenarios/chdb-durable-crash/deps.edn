@@ -2,7 +2,10 @@
  :deps
  {io.github.chucklehead-dev/jolt-chdb
   {:git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
-   :git/sha "dbc2db22130c7e783739c79bc24691dcbba21906"}
+   :git/sha "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee"}
+  jolt-lang/db
+  {:git/url "https://github.com/casselc/db.git"
+   :git/sha "6db791634e5a4c65c24646833b2e82d3a5d7a121"}
   io.github.chucklehead-dev/jolt-aspect-packs
   {:local/root "../.."}}
  :jolt/build

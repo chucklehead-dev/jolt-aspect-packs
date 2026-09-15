@@ -22,7 +22,7 @@
   {:now-ms (constantly 1000M)
    :await-heartbeat! (fn [stop _] @stop :stop)
    :durable-capability (fn [] {:status :supported
-                               :native-version "26.7.2-rc.2"})
+                               :native-version "26.7.3"})
    :create-scratch! (fn [_]
                       (Files/createTempDirectory
                        "jchdb-crash-recovery-" (make-array FileAttribute 0)))
@@ -51,8 +51,8 @@
         acquired (control/acquire!
                   store {:owner "producer" :instance "crash-run"
                          :expires-at 500M :now 0M :database "default"
-                         :engine-version "26.7.2-rc.2" :backup-format 1
-                         :min-reader "26.7.2-rc.2"})
+                         :engine-version "26.7.3" :backup-format 1
+                         :min-reader "26.7.3"})
         token (:token acquired)
         action {:operation operation :phase phase :ready-file ready-file}]
     (faults/call-with-fault

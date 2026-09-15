@@ -4,6 +4,7 @@
             [jolt.aspect-packs.checkpoint-replay-test]
             [jolt.aspect-packs.chdb-durable.faults-test]
             [jolt.aspect-packs.chdb-durable.provider-test]
+            [jolt.aspect-packs.chdb-durable.qualification-test]
             [jolt.aspect-packs.compatibility-test]
             [jolt.aspect-packs.core-async.faults-test]
             [jolt.aspect-packs.core-async.model-test]
@@ -28,6 +29,7 @@
                 'jolt.aspect-packs.checkpoint-replay-test
                 'jolt.aspect-packs.chdb-durable.faults-test
                 'jolt.aspect-packs.chdb-durable.provider-test
+                'jolt.aspect-packs.chdb-durable.qualification-test
                 'jolt.aspect-packs.compatibility-test
                 'jolt.aspect-packs.core-async.faults-test
                 'jolt.aspect-packs.core-async.model-test
