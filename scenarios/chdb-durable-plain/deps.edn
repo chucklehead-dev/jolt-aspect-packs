@@ -2,10 +2,10 @@
  :deps
  {io.github.chucklehead-dev/jolt-chdb
   {:git/url "https://github.com/chucklehead-dev/jolt-chdb.git"
-   :git/sha "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee"}
+   :git/sha "3e3141fd29b335aa7bf2b6039fed7b3bbb4ebe04"}
   jolt-lang/db
   {:git/url "https://github.com/casselc/db.git"
-   :git/sha "6db791634e5a4c65c24646833b2e82d3a5d7a121"}
+   :git/sha "9e8c82a59ec63a36e86a758ff39ca9c5a9c3d165"}
   io.github.chucklehead-dev/jolt-hegel
   {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
    :git/sha "3bc46499e0cfb5cf8fe67c30e997fbcae135ab47"}

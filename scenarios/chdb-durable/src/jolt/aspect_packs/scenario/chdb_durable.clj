@@ -30,6 +30,15 @@
                     "chdb-durable-aspect-" ".tar.gz"
                     (make-array FileAttribute 0))]
     (try
+      ;; Exercise the writer's staged-file route, not just its older byte API.
+      ;; Reuse the temporary spool before replacing it with the checkpoint.
+      (Files/write checkpoint (.getBytes "SELECT 2\n" "UTF-8")
+                   (into-array OpenOption [StandardOpenOption/TRUNCATE_EXISTING
+                                           StandardOpenOption/WRITE]))
+      (let [publication (control/publish-wal-file! store token checkpoint)]
+        (control/commit-reference!
+         store token {:kind :wal :reference (:reference publication)
+                      :verify-reference! control/verify-file-reference!}))
       (Files/write checkpoint (.getBytes "checkpoint" "UTF-8")
                    (into-array OpenOption [StandardOpenOption/TRUNCATE_EXISTING
                                            StandardOpenOption/WRITE]))
@@ -60,7 +69,7 @@
                        "min_reader" "1.0.0"}
                       (select-keys (get-in result [:head "engine"])
                                    ["version" "backup_format" "min_reader"]))
-                   (= 2 (get-in result [:head "manifest" "seq"]))
+                   (= 3 (get-in result [:head "manifest" "seq"]))
                    (map? (get-in result [:head "manifest" "base"]))
                    (empty? (get-in result [:head "manifest" "wal"])))
       (throw (ex-info "Durable scenario did not release its writer" {})))
@@ -71,10 +80,17 @@
       (let [commands (model/commands events)
             printed (pr-str events)]
         (when-not (= [:acquire :acquire :publish :commit-attempt :renew-attempt
+                      :publish :commit-attempt
                       :checkpoint-publish :commit-attempt :release-attempt]
                      (mapv :command commands))
           (throw (ex-info "woven Durable command history is incomplete"
                           {:commands commands})))
+        (let [publications (filterv #(= :publish (:command %)) commands)]
+          (when-not (and (= 2 (count publications))
+                         (integer? (:payload-size (first publications)))
+                         (= :file (:payload-source (second publications)))
+                         (not (contains? (second publications) :payload-size)))
+            (throw (ex-info "woven Durable history missed a WAL route" {}))))
         (when-not (= [[]
                       [{:event :durable/forced-live-takeover
                         :severity :warning
@@ -87,7 +103,8 @@
                           (filter #(= :invoke (:phase %)) events))
           (throw (ex-info "woven Durable history lost context" {})))
         (doseq [secret ["old-private-owner" "old-private-instance"
-                        "private-owner" "private-instance" "SELECT 1"
+                        "private-owner" "private-instance" "SELECT 1" "SELECT 2"
+                        "chdb-durable-aspect-"
                         "wal/" "checkpoints/"]]
           (when (.contains printed secret)
             (throw (ex-info "woven Durable history retained private data"

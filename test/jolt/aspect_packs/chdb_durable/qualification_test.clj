@@ -3,9 +3,9 @@
             [clojure.test :refer [deftest is]]))
 
 (def chdb-revision
-  "3552a2575a96e3c9dd7b495a9b16b1e9c3317eee")
+  "3e3141fd29b335aa7bf2b6039fed7b3bbb4ebe04")
 (def db-revision
-  "6db791634e5a4c65c24646833b2e82d3a5d7a121")
+  "9e8c82a59ec63a36e86a758ff39ca9c5a9c3d165")
 (def compiler-revision
   "120643d6bc322800a700e870de5c8087ad6085fa")
 (def release-revision

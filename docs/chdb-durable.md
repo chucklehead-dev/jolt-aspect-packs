@@ -20,6 +20,12 @@ carry one shared retry budget. Selecting only the terminal arity therefore
 observes both call shapes exactly once: advising both the convenience wrapper
 and its delegate would emit a nested duplicate operation.
 
+Both byte and staged-file WAL routes project to `:publish`. Byte input includes
+its actual in-memory size; file input carries only `:payload-source :file`.
+Advice does not stat/open the file, retain its path, or invent a byte count.
+The file route uses `:durable/publish-wal-file` as its advice identity while
+sharing generation/sequence/reference and publication/commit model semantics.
+
 Durable-object identity, writer identity, immutable-object identity, and
 publication-attempt identity are stable only inside one journal and are emitted
 as opaque tokens. The object token partitions interleaved commands from
@@ -100,27 +106,27 @@ recorded in `targets.edn`:
   chdb-durable-plain-smoke
 ```
 
-The current qualification set is exact and indivisible:
+The candidate qualification set is exact and indivisible (hosted woven,
+plain-erasure and crash gates remain required):
 
 - released Jolt `0.8.6` at
   `f3041a0e32ba0db1b92bd69b8ecb7b40f8b2e115`;
 - aspect compiler `120643d6bc322800a700e870de5c8087ad6085fa`;
-- jolt-chdb merge `3552a2575a96e3c9dd7b495a9b16b1e9c3317eee`; and
+- jolt-chdb merge `3e3141fd29b335aa7bf2b6039fed7b3bbb4ebe04`; and
 - its canonical `jolt-lang/db` provider
-  `6db791634e5a4c65c24646833b2e82d3a5d7a121`.
+  `9e8c82a59ec63a36e86a758ff39ca9c5a9c3d165`.
 
 The explicit provider override in every scenario is intentional: dependency
 resolution must not silently select an older transitive DB implementation.
-The jolt-chdb merge still has the documented one-live-path process restriction.
-Its open [jolt-chdb issue #103](https://github.com/chucklehead-dev/jolt-chdb/issues/103)
-owns the final-close lifecycle decision; this qualification does not include or
-claim unpublished work from that issue.
+This in-memory control scenario does not qualify native-session lifecycle or
+remove any process/path ownership restrictions. Application/native gates own
+those claims separately.
 
 The woven lane executes the real in-memory Durable implementation through
-an ordinary acquire, a forced-live acquire and warning, WAL publish/commit,
+an ordinary acquire, a forced-live acquire and warning, byte and file WAL publish/commit,
 renew, checkpoint publish/commit, and release. The
 compiler report must resolve the option-bearing arities and closed warning
-result at jolt-chdb `3552a2575a96e3c9dd7b495a9b16b1e9c3317eee`,
+result at jolt-chdb `3e3141fd29b335aa7bf2b6039fed7b3bbb4ebe04`,
 with one selected site per logical
 operation. The scenario then validates the captured history offline. Warning
 observation is bounded evidence for this causally complete scenario, not a
@@ -147,8 +153,8 @@ For application integration, keep the gates layered:
 4. oscope pins this aspect-pack revision together with the four exact stack
    coordinates above, runs the native chDB Durable lifecycle, and can bind a
    journal around that test to validate the application-observed history with
-   this model. Oscope must retain the one-live-path restriction until
-   jolt-chdb issue #103 lands and this matrix is requalified.
+   this model. Native-session and process/path ownership guarantees still
+   require the application's own lifecycle gates.
 
 This keeps model checking, generated model-based testing, implementation
 properties, and observed-trace validation distinct while sharing one command

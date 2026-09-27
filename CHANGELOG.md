@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Observe staged file-backed WAL publication as well as byte publication in
+  the Durable pack. File input records a categorical source, never a path or
+  fabricated size; both routes retain the same checked publish/commit model.
+  Exact manifest/report controls now include the production writer route.
+
 - Requalify the core.async observation and fault pack against the pending-put
   ownership repair merged at `casselc/jolt@aa0e71f`: capacity-zero,
   capacity-one, callback, fiber, `alts!`, and transformed close/drain witnesses
