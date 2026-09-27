@@ -2,7 +2,7 @@
   (:require [hegel.trace :as trace]))
 
 (def ^:private operations
-  #{:durable/acquire :durable/publish-wal :durable/publish-checkpoint
+  #{:durable/acquire :durable/publish-wal :durable/publish-wal-file :durable/publish-checkpoint
     :durable/commit-reference :durable/renew :durable/release})
 
 (defn- opaque-writer? [value]
@@ -43,8 +43,9 @@
        (or (not (contains? value :last-reference))
            (reference? (:last-reference value)))))
 
-(defn- input? [{:keys [command writer kind reference payload-size now
-                        expires-at clock-skew force? durable-object] :as input}]
+(defn- input? [operation {:keys [command writer kind reference payload-size
+                               payload-source now expires-at clock-skew force?
+                               durable-object] :as input}]
   (and
    (map? input)
    (opaque-writer? durable-object)
@@ -57,10 +58,17 @@
           (number? clock-skew) (not (neg? clock-skew)) (boolean? force?))
 
      :publish
-     (and (= #{:command :writer :kind :payload-size :durable-object}
-             (set (keys input)))
-          (writer? writer) (= :wal kind)
-          (integer? payload-size) (not (neg? payload-size)))
+     (and (writer? writer) (= :wal kind)
+          (case operation
+            :durable/publish-wal
+            (and (= #{:command :writer :kind :payload-size :durable-object}
+                    (set (keys input)))
+                 (integer? payload-size) (not (neg? payload-size)))
+            :durable/publish-wal-file
+            (and (= #{:command :writer :kind :payload-source :durable-object}
+                    (set (keys input)))
+                 (= :file payload-source))
+            false))
 
      :checkpoint-publish
      (and (= #{:command :writer :durable-object} (set (keys input)))
@@ -104,7 +112,7 @@
      (every? (fn [event]
                (or (not= :invoke (:phase event))
                    (and (contains? operations (:operation event))
-                        (input? (:input event)))))
+                        (input? (:operation event) (:input event)))))
              events))))
 
 (def shaped-terminals
@@ -134,7 +142,7 @@
                             (head? (:head value))
                             (warning-vector? (:warnings value)
                                              (get-in value [:head :generation])))
-                       (:durable/publish-wal :durable/publish-checkpoint)
+                       (:durable/publish-wal :durable/publish-wal-file :durable/publish-checkpoint)
                        (and (contains? #{:published :already-published
                                         :reconciled}
                                        (:outcome value))
@@ -192,7 +200,7 @@
                               (= (:manifest-sequence next-head)
                                  (:manifest-sequence prior-head)))))
 
-                (:durable/publish-wal :durable/publish-checkpoint)
+                (:durable/publish-wal :durable/publish-wal-file :durable/publish-checkpoint)
                 (let [reference (:reference value)]
                   (and (= (:generation (:writer input))
                           (:generation reference))

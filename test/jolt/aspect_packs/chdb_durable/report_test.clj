@@ -5,6 +5,7 @@
 (def expected
   [[:durable/acquire 'jdbc.chdb.durable.control/acquire! 2]
    [:durable/publish-wal 'jdbc.chdb.durable.control/publish-wal-bytes! 4]
+   [:durable/publish-wal-file 'jdbc.chdb.durable.control/publish-wal-file! 4]
    [:durable/publish-checkpoint
     'jdbc.chdb.durable.control/publish-checkpoint-file! 4]
    [:durable/commit-reference 'jdbc.chdb.durable.control/commit-reference! 3]

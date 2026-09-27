@@ -68,6 +68,14 @@
      :payload-size (when (bytes? (nth args 2 nil))
                      (alength ^bytes (nth args 2)))}
 
+    :durable/publish-wal-file
+    ;; The caller owns the spool. Advice neither reads/stats it nor retains its
+    ;; path. This route shares WAL publication semantics, not byte-size claims.
+    {:command :publish
+     :writer (writer-summary journal (second args))
+     :kind :wal
+     :payload-source :file}
+
     :durable/publish-checkpoint
     {:command :checkpoint-publish
      :writer (writer-summary journal (second args))}

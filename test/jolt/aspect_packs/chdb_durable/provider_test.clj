@@ -81,6 +81,48 @@
         (is (not (.contains printed secret))))
       (is (true? (history/assert-complete! journal))))))
 
+(deftest file-wal-publication-reuses-publish-semantics-without-reading-path
+  (let [journal (history/journal)
+        store {:private "file-store-secret"}
+        token {:owner "file-owner-secret" :instance "file-instance-secret"
+               :generation 1}
+        reference {"key" "wal/1-1-cafebabe.jsonl" "size" 19
+                   "sha256" "file-digest-secret"}
+        active (head 1 "file-owner-secret" "file-instance-secret" 0 nil)
+        committed (head 1 "file-owner-secret" "file-instance-secret" 1 reference)]
+    (invoke journal :durable/acquire
+            [store {:owner "file-owner-secret" :instance "file-instance-secret"
+                    :now 10 :expires-at 20}]
+            {:status :acquired :head active :warnings []})
+    ;; Deliberately nonexistent: advice must not stat, open or stringify it.
+    (invoke journal :durable/publish-wal-file
+            [store token "/nonexistent/private-wal-secret.jsonl" {}]
+            {:status :published :reference reference})
+    (invoke journal :durable/commit-reference
+            [store token {:kind :wal :reference reference}]
+            {:status :committed :head committed})
+    (let [events (history/events journal)
+          commands (model/commands events)
+          publication (second commands)]
+      (is (= events (model/check! events)))
+      (is (= [:acquire :publish :commit-attempt] (mapv :command commands)))
+      (is (= :file (:payload-source publication)))
+      (is (not (contains? publication :payload-size)))
+      (is (= (:reference (:result publication)) (:reference (nth commands 2))))
+      (doseq [secret ["file-store-secret" "file-owner-secret"
+                      "file-instance-secret" "private-wal-secret"
+                      "cafebabe" "file-digest-secret"]]
+        (is (not (.contains (pr-str events) secret))))
+      (is (thrown? Exception
+                   (model/check! (assoc-in events [2 :operation]
+                                           :durable/publish-wal))))
+      (is (thrown? Exception
+                   (model/check! (assoc-in events [2 :input :payload-source]
+                                           :bytes))))
+      (is (thrown? Exception
+                   (model/check! (assoc-in events [2 :input :path]
+                                           "/private")))))))
+
 (deftest partitions-interleaved-control-histories-by-opaque-durable-object
   (let [journal (history/journal)
         store-a {:root "/private/a"}
@@ -279,6 +321,7 @@
     (is (= (:aspects target) (:aspects pack)))
     (is (= {:durable/acquire 2
             :durable/publish-wal 4
+            :durable/publish-wal-file 4
             :durable/publish-checkpoint 4
             :durable/commit-reference 3
             :durable/renew 4
